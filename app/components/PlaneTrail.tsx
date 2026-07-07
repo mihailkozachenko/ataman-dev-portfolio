@@ -1,11 +1,16 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 // Flight path expressed as percentages of the hero's own box, shared by the
 // trail (SVG, stretches with the box) and the plane (HTML, stays undistorted).
 const START = { x: -6, y: 68 };
 const END = { x: 106, y: 16 };
+
+// Fallback used only for the first frame, before the container has been
+// measured — the box is always wider than tall, so this leans shallow.
+const FALLBACK_ANGLE_DEG = -17;
 
 const FLIGHT_DURATION = 4.5;
 const REPEAT_DELAY = 9;
@@ -17,8 +22,34 @@ const OPACITY_TIMES = [0, 0.1, 0.88, 1];
 const PLANE_PATH = "M100,20 L34,8 L0,17 L0,23 L34,32 Z";
 
 export function PlaneTrail() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [angleDeg, setAngleDeg] = useState(FALLBACK_ANGLE_DEG);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
+    // The trail's own line is an SVG stretched with preserveAspectRatio="none",
+    // so it always matches the box's real aspect ratio automatically. The
+    // plane is a plain HTML element instead (so its silhouette isn't skewed
+    // by that stretch), which means its rotation has to be computed from the
+    // path's real pixel-space slope — not a fixed angle tuned for one aspect.
+    const updateAngle = () => {
+      const { width, height } = node.getBoundingClientRect();
+      if (width === 0 || height === 0) return;
+      const dx = ((END.x - START.x) / 100) * width;
+      const dy = ((END.y - START.y) / 100) * height;
+      setAngleDeg((Math.atan2(dy, dx) * 180) / Math.PI);
+    };
+
+    updateAngle();
+    const observer = new ResizeObserver(updateAngle);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div ref={containerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox="0 0 100 100"
@@ -68,7 +99,7 @@ export function PlaneTrail() {
 
       <motion.div
         className="absolute h-[11px] w-[27px] -translate-x-1/2 -translate-y-1/2 text-lavender-mist"
-        style={{ rotate: -17 }}
+        style={{ rotate: angleDeg }}
         initial={{ left: `${START.x}%`, top: `${START.y}%`, opacity: 0 }}
         animate={{
           left: [`${START.x}%`, `${END.x}%`],

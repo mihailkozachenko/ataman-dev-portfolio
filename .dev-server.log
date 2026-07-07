@@ -275,3 +275,7 @@ https://react.dev/link/hydration-mismatch
  GET / 200 in 565ms (next.js: 21ms, application-code: 543ms)
 [browser] Uncaught NotFoundError: Failed to execute 'removeChild' on 'Node': The node to be removed is not a child of this node.
  GET / 200 in 160ms (next.js: 14ms, application-code: 146ms)
+✓ Compiled in 406ms
+ GET / 200 in 409ms (next.js: 250ms, application-code: 159ms)
+✓ Compiled in 228ms
+ GET / 200 in 204ms (next.js: 135ms, application-code: 68ms)
