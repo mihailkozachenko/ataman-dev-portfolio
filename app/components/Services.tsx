@@ -9,6 +9,7 @@ const SERVICES = [
   "Business card websites",
   "Telegram bots",
   "Online stores",
+  "Web accessibility (EAA/WCAG)",
 ];
 
 export function Services() {
