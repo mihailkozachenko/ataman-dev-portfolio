@@ -3,7 +3,27 @@ import { Container } from "./Container";
 import { Reveal } from "./Reveal";
 import { SectionStamp } from "./SectionStamp";
 
-const PROJECTS = [
+type Project = {
+  name: string;
+  status: string;
+  badge?: string;
+  description: string;
+  tags: string[];
+  href: string;
+  label: string;
+};
+
+const PROJECTS: Project[] = [
+  {
+    name: "UKOL",
+    status: "Live",
+    badge: "Flagship",
+    description:
+      "AI quote tool for Czech tradesmen. Dictate the job and snap a few photos on site — UKOL drafts a priced quote from the tradesman's own price list. Clients approve it via a link without signing up, then come advance and final invoices with QR bank payment, plus handover protocols and work contracts signed right on the phone. Interface in Czech, Ukrainian, Russian and English. Now piloting with the first tradesmen in Prague.",
+    tags: ["Next.js", "Supabase", "Stripe", "Whisper", "Vision AI"],
+    href: "https://ukol.app",
+    label: "ukol.app",
+  },
   {
     name: "DokliCZ",
     status: "Live",
@@ -36,9 +56,16 @@ export function Projects() {
           <Reveal key={project.name} delay={100 + index * 100} className="mt-12 sm:mt-16">
             <div className="rounded-[19.2px] border border-almost-white/15 bg-almost-white/[0.03] p-8 sm:p-10">
               <div className="flex flex-wrap items-center justify-between gap-4">
-                <h3 className="font-sans text-2xl font-medium text-almost-white sm:text-[32px]">
-                  {project.name}
-                </h3>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className="font-sans text-2xl font-medium text-almost-white sm:text-[32px]">
+                    {project.name}
+                  </h3>
+                  {project.badge && (
+                    <span className="rounded-[6px] border border-signal-violet/60 px-2.5 py-1 font-mono text-xs uppercase tracking-[0.07em] text-signal-violet">
+                      {project.badge}
+                    </span>
+                  )}
+                </div>
                 <span className="inline-flex items-center gap-2 font-sans text-sm text-steel">
                   <span
                     className={`h-2 w-2 rounded-full ${project.status === "Live" ? "bg-signal-violet" : "bg-[#d6336c]"}`}

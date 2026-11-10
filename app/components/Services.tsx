@@ -4,6 +4,7 @@ import { ScrambleText } from "./ScrambleText";
 import { SectionStamp } from "./SectionStamp";
 
 const SERVICES = [
+  "Business process automation with AI",
   "Landing pages",
   "AI web applications",
   "Business card websites",

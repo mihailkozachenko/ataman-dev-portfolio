@@ -63,8 +63,8 @@ export function Hero() {
                 variants={item}
                 className="mt-8 max-w-xl font-sans text-lg font-light leading-relaxed text-steel"
               >
-                I build web applications with AI, authentication and payments. Fast delivery,
-                honest prices.
+                I automate business processes with AI and build web applications with
+                authentication and payments. Fast delivery, honest prices.
               </motion.p>
 
               <div className="mt-10 flex flex-wrap gap-4">

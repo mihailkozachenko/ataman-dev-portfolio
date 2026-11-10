@@ -24,11 +24,11 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "Ataman Dev — AI Web Developer",
   description:
-    "I build web applications with AI, authentication and payments. Fast delivery, honest prices.",
+    "I automate business processes with AI and build web applications with authentication and payments. Fast delivery, honest prices.",
   openGraph: {
     title: "Ataman Dev — AI Web Developer",
     description:
-      "I build web applications with AI, authentication and payments. Fast delivery, honest prices.",
+      "I automate business processes with AI and build web applications with authentication and payments. Fast delivery, honest prices.",
     type: "website",
   },
 };
