@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --sky-top: #3f9cff;
-  --sky-mid: #86c5ff;
-  --sky-low: #c4e3ff;
-  --sky-floor: #eaf5ff;
+  /* Dreamcore sky: saturated at the top, down to the horizon colour sampled
+     from the field photo (#c2e2fa) so the grass meets it without a seam. */
+  --sky-0: #0b36c4;
+  --sky-1: #1d5ae6;
+  --sky-2: #3f8ff5;
+  --sky-3: #86c4f7;
+  --sky-4: #c2e2fa;
   --ink: #0a0a0a;
   --ink-soft: #0d2440;
   --plaque-red: #d70600;
@@ -12,6 +15,12 @@
   --paper: #ffffff;
   --checker-a: #ffffff;
   --checker-b: #cdcdcd;
+
+  /* One easing for every UI transition. */
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* One engine cycle: a puff of smoke and a kick of the machine. */
+  --puff: 4.2s;
 }
 
 @theme inline {
@@ -21,23 +30,38 @@
   --color-plaque-lime: var(--plaque-lime);
   --color-paper: var(--paper);
 
-  --font-sans: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimbus Sans", sans-serif;
+  --font-sans: var(--font-archivo), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 html {
-  background-color: var(--sky-mid);
+  background-color: var(--sky-4);
   scroll-behavior: smooth;
+}
+/* Lenis drives scrolling itself; native smooth scrolling would fight it. */
+html.lenis,
+html.lenis body {
+  height: auto;
+  scroll-behavior: auto;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+/* Custom bubble cursor (fine pointers, motion allowed). */
+html.bubble-cursor,
+html.bubble-cursor * {
+  cursor: none !important;
 }
 
 body {
   min-height: 100vh;
   background: linear-gradient(
     180deg,
-    var(--sky-top) 0%,
-    var(--sky-mid) 28%,
-    var(--sky-low) 62%,
-    var(--sky-floor) 100%
+    var(--sky-0) 0%,
+    var(--sky-1) 16%,
+    var(--sky-2) 38%,
+    var(--sky-3) 68%,
+    var(--sky-4) 92%
   );
   color: var(--ink);
   font-family: var(--font-sans);
@@ -49,8 +73,8 @@ body {
   color: var(--ink);
 }
 
-/* Two-tone ring: a white halo hugging the element, then a black outline.
-   Visible on sky, fog, white clouds and red/lime plaques alike. */
+/* Two-tone ring: white halo hugging the element, then a black outline —
+   visible on deep blue, pale sky, photos and plaques alike. */
 :focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
@@ -58,6 +82,14 @@ body {
 }
 
 @layer components {
+  /* Display headings: one style for every big title — heavy Archivo, tight tracking. */
+  .text-display {
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 0.86;
+    letter-spacing: -0.05em;
+  }
+
   /* "Transparent PNG" checkerboard peeking through the sky. */
   .checker {
     background-color: var(--checker-a);
@@ -85,8 +117,9 @@ body {
     text-transform: uppercase;
     text-decoration: none;
     transition:
-      transform 0.12s ease-out,
-      box-shadow 0.12s ease-out;
+      transform 0.22s var(--ease-ui),
+      box-shadow 0.22s var(--ease-ui),
+      background-color 0.22s var(--ease-ui);
   }
   .plaque-tag {
     min-height: 0;
@@ -103,6 +136,10 @@ body {
   .plaque-white {
     background: var(--paper);
   }
+  .plaque-ink {
+    background: var(--ink);
+    color: var(--paper);
+  }
   a.plaque:hover,
   button.plaque:hover {
     transform: translate(-2px, -2px);
@@ -114,61 +151,69 @@ body {
     box-shadow: 2px 2px 0 var(--ink);
   }
 
-  /* Hover / focus "lift" for clouds and service bubbles. */
+  /* Pixel "window" label behind body copy so it reads on any part of the sky. */
+  .label-box {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  /* Hover / focus lift for clouds and service bubbles. */
   .floaty {
     transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   .floaty:hover,
   .floaty:focus-visible {
-    transform: scale(1.07);
+    transform: scale(1.05);
+  }
+
+  /* Project cloud = the link. Its focus ring follows the cloud's silhouette:
+     stacked zero-blur drop-shadows trace the alpha edge (white inside, black outside). */
+  .cloud-link:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+  .cloud-link:focus-visible .cloud-img {
+    filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff)
+      drop-shadow(0 -2px 0 #fff) drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink))
+      drop-shadow(0 3px 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink));
+  }
+  @media (forced-colors: active) {
+    .cloud-link:focus-visible {
+      outline: 3px solid CanvasText;
+    }
+  }
+
+  /* Dark text sitting directly on a photo (cloud body, clear bubble): a soft
+     white glow keeps it ≥ 4.5:1 where the photo gets darker or busier. */
+  .text-glow {
+    text-shadow:
+      0 0 2px #fff,
+      0 0 6px #fff,
+      0 0 12px rgb(255 255 255 / 0.85);
+  }
+
+  /* ---------- machines ---------- */
+  .engine-hum {
+    animation: hum 0.14s steps(2, jump-none) infinite;
+  }
+  .engine-kick {
+    animation: kick var(--puff) cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+    transform-origin: 30% 100%;
+  }
+  .smoke-puff {
+    animation: puff var(--puff) ease-out infinite;
+  }
+  .smoke-puff-late {
+    animation: puff var(--puff) ease-out infinite;
+    animation-delay: 0.5s;
+  }
+  .contact-shadow {
+    background: radial-gradient(closest-side, rgb(0 0 0 / 0.38), rgb(0 0 0 / 0.16) 55%, transparent);
+    animation: shadow-kick var(--puff) cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
   }
 
   /* ---------- soap bubbles ---------- */
-  .bubble {
-    position: relative;
-    display: block;
-    border-radius: 9999px;
-    background: radial-gradient(
-      circle,
-      rgb(255 255 255 / 0.1) 0 56%,
-      rgb(255 255 255 / 0.32) 70%,
-      rgb(255 255 255 / 0.85) 94%,
-      rgb(255 255 255 / 0.2) 100%
-    );
-  }
-  /* Iridescent film: a rotating conic gradient masked to the rim. Rotation is
-     compositor-only, so it stays cheap even with a dozen bubbles. */
-  .bubble::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: conic-gradient(
-      from 20deg,
-      #ff8fe0,
-      #8ff0ff,
-      #fff38f,
-      #a6ffb0,
-      #b99cff,
-      #ff8fe0
-    );
-    -webkit-mask: radial-gradient(circle, transparent 0 58%, #000 76% 93%, transparent 100%);
-    mask: radial-gradient(circle, transparent 0 58%, #000 76% 93%, transparent 100%);
-    opacity: 0.6;
-    animation: bubble-film 7s linear infinite;
-  }
-  /* Specular highlight. */
-  .bubble::after {
-    content: "";
-    position: absolute;
-    left: 19%;
-    top: 15%;
-    width: 28%;
-    height: 18%;
-    border-radius: 50%;
-    background: radial-gradient(ellipse at center, #fff 0 35%, rgb(255 255 255 / 0) 70%);
-    transform: rotate(-35deg);
-  }
   .bubble-deco {
     position: absolute;
     left: 0;
@@ -177,6 +222,8 @@ body {
     height: 64px;
     opacity: 0;
     will-change: transform, opacity;
+    /* A faint shadow so clear bubbles still read on the pale lower sky. */
+    filter: drop-shadow(0 3px 5px rgb(13 36 64 / 0.22));
   }
   .bubble-popping {
     animation: bubble-pop 0.28s ease-out forwards;
@@ -200,18 +247,137 @@ body {
     animation: panel-in 0.25s ease-out backwards;
   }
 
-  /* Slow CSS drift for purely decorative hero clouds. */
-  .drift-css {
-    animation: drift-x 38s ease-in-out infinite alternate;
+  /* Behind the hill: the page sky eases into the horizon colour of the field
+     photo, so the cut-out silhouette sits on matching sky with no seam. */
+  .hill-sky {
+    background: linear-gradient(to bottom, rgb(194 226 250 / 0) 0%, var(--sky-4) 38%);
   }
-  .drift-css-slow {
-    animation: drift-x 56s ease-in-out infinite alternate-reverse;
+  /* ---------- fog scene ---------- */
+  .fog-scene {
+    /* Machine width; on desktop everything in the scene is measured in its cqw. */
+    --mw: clamp(130px, 40vw, 200px);
+    container-type: inline-size;
+  }
+  @media (min-width: 1024px) {
+    .fog-scene {
+      --mw: 31cqw;
+    }
+  }
+  /* Project cloud slots: a nudged column on phones, points on the plume on desktop.
+     `translate` centres the slot; `transform` stays free for the drift. */
+  .cloud-slot {
+    translate: var(--nudge, 0) 0;
+  }
+  @media (min-width: 1024px) {
+    .cloud-slot {
+      position: absolute;
+      left: calc(var(--x) * 1cqw);
+      bottom: calc(var(--y) * 1cqw);
+      translate: -50% 50%;
+    }
+  }
+  /* Slow volumetric swell of the soft far smoke. */
+  .billow {
+    animation: billow 13s ease-in-out infinite alternate;
+  }
+
+  /* ---------- collage ---------- */
+  .broken-frame {
+    outline: 1px solid #8f8f8f;
+    outline-offset: -1px;
+    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.55);
+  }
+  /* A cloud that "failed to render": flat chroma key in the cloud's exact shape. */
+  .chroma-cloud {
+    background: transparent;
+  }
+  /* The mask image is fetched only once the page is idle. */
+  :root[data-ready] .chroma-cloud {
+    background: #00ff00;
+    -webkit-mask: var(--cloud-mask) center / contain no-repeat;
+    mask: var(--cloud-mask) center / contain no-repeat;
+  }
+  /* A piece of the deep top sky pasted onto the pale lower sky. */
+  .sky-patch {
+    background: linear-gradient(180deg, var(--sky-0), var(--sky-1));
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.7), 0 10px 24px rgb(5 25 80 / 0.25);
+  }
+  .collage-drift {
+    animation: collage-drift 40s ease-in-out infinite alternate;
   }
 }
 
-@keyframes bubble-film {
+/* Motor hum: 1–2 px jitter. */
+@keyframes hum {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(1.5px, -1px);
+  }
+}
+/* Puff: a hard kick back away from the nozzle, a small rebound, then rest. */
+@keyframes kick {
+  0%,
+  100% {
+    transform: none;
+  }
+  3% {
+    transform: translate(-6px, 1px) rotate(-1deg);
+  }
+  8% {
+    transform: translate(2px, 0) rotate(0.35deg);
+  }
+  13% {
+    transform: translate(-1px, 0) rotate(-0.1deg);
+  }
+  18% {
+    transform: none;
+  }
+}
+@keyframes shadow-kick {
+  0%,
+  18%,
+  100% {
+    transform: none;
+  }
+  3% {
+    transform: translateX(-5px) scaleX(1.03);
+  }
+}
+/* Smoke swells and brightens on each puff, then thins out while it drifts. */
+@keyframes puff {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+  5% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  35% {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+}
+@keyframes billow {
+  from {
+    transform: scale(0.96) rotate(-1.5deg);
+  }
   to {
-    transform: rotate(360deg);
+    transform: scale(1.08) rotate(2deg);
+  }
+}
+@keyframes collage-drift {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 2vw -1vw;
   }
 }
 @keyframes bubble-pop {
@@ -248,19 +414,238 @@ body {
     opacity: 0;
   }
 }
-@keyframes drift-x {
-  from {
-    transform: translateX(-3vw);
+
+
+/* ================= experience layer ================= */
+@layer components {
+  /* Header toggles share one footprint, so swapping labels never shifts the bar. */
+  .toggle-plaque {
+    justify-content: center;
+    min-width: 44px;
   }
-  to {
-    transform: translateX(3vw);
+  @media (min-width: 640px) {
+    .toggle-plaque {
+      width: 9.5rem;
+    }
+  }
+
+  /* Static film grain over everything. */
+  .film-grain {
+    position: fixed;
+    inset: 0;
+    z-index: 70;
+    pointer-events: none;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23n)'/></svg>");
+    background-size: 180px 180px;
+  }
+
+  /* Bubble cursor. */
+  .bubble-cursor-el {
+    position: fixed;
+    left: -18px;
+    top: -18px;
+    z-index: 80;
+    width: 36px;
+    height: 36px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s var(--ease-ui);
+    filter: drop-shadow(0 2px 4px rgb(13 36 64 / 0.3));
+  }
+  .bubble-cursor-el[data-visible="true"] {
+    opacity: 1;
+  }
+  .bubble-cursor-el[data-pop="true"] img {
+    animation: bubble-pop 0.3s ease-out forwards;
+  }
+  .bubble-cursor-drops {
+    position: absolute;
+    inset: 0;
+  }
+  .bubble-cursor-drops > span {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 4px;
+    height: 4px;
+    margin: -2px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+  }
+  .bubble-cursor-el[data-pop="true"] .bubble-cursor-drops > span {
+    animation: cursor-drop 0.32s ease-out forwards;
+  }
+
+  /* ---------- letters ---------- */
+  .hero-letter,
+  .dissolve-letter {
+    display: inline-block;
+    will-change: transform;
+  }
+  .hero-drop .hero-letter {
+    animation: letter-drop 1.25s both;
+    animation-delay: calc(var(--i) * 70ms + 120ms);
+  }
+
+  /* The loose letter. */
+  .hang-slot {
+    vertical-align: baseline;
+  }
+  .hang-chroma {
+    position: absolute;
+    inset: 0;
+    color: #00ff00;
+    opacity: 0;
+  }
+  .hang-slot.is-empty .hang-chroma {
+    opacity: 1;
+  }
+  .hang-nail {
+    position: absolute;
+    left: 22%;
+    top: 7%;
+    z-index: 2;
+    width: 0.07em;
+    height: 0.07em;
+    min-width: 5px;
+    min-height: 5px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #e8e8e8, #555 70%);
+    box-shadow: 0 1px 1px rgb(0 0 0 / 0.5);
+  }
+  .hang-fly {
+    position: relative;
+    display: inline-block;
+  }
+  .hang-spin {
+    display: inline-block;
+    transform-origin: 22% 7%;
+    transform: rotate(var(--hang));
+    cursor: pointer;
+  }
+  .hang-spin.is-hanging {
+    animation: swing 3.4s ease-in-out infinite alternate;
+  }
+  /* Rotation is about the centre once it falls. */
+  .hang-slot.is-empty .hang-spin {
+    transform-origin: 50% 50%;
+  }
+  /* Lying outside: a touch darker and cooler, like an object in daylight shade. */
+  .hang-fly.is-landed .hang-spin {
+    color: #1f2c3b;
+    filter: brightness(0.92) saturate(0.85);
+  }
+  .hang-ground {
+    position: absolute;
+    left: 50%;
+    display: none;
+    height: 0.24em;
+    translate: -50% -88%;
+    pointer-events: none;
+  }
+  .hang-fly.is-landed .hang-ground {
+    display: block;
+  }
+  /* Grass blades over the letter's lower edge: a strip of the hill photo with a
+     ragged top. */
+  .hang-ground::before {
+    content: "";
+    position: absolute;
+    inset: -20% -6% 0;
+    background: var(--grass) 30% 62% / 900px auto;
+    -webkit-mask: linear-gradient(to top, #000 45%, transparent 100%),
+      repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 5px);
+    -webkit-mask-composite: source-over;
+    mask: linear-gradient(to top, #000 40%, transparent 100%) add,
+      repeating-linear-gradient(90deg, #000 0 3px, rgb(0 0 0 / 0.55) 3px 6px) add;
+  }
+  /* Contact shadow on the grass. */
+  .hang-ground::after {
+    content: "";
+    position: absolute;
+    left: -8%;
+    right: -8%;
+    top: 85%;
+    height: 0.18em;
+    z-index: -1;
+    background: radial-gradient(closest-side, rgb(0 0 0 / 0.42), transparent);
   }
 }
 
-/* User pressed "Pause motion". */
-:root[data-motion="still"] .bubble::before,
-:root[data-motion="still"] .drift-css,
-:root[data-motion="still"] .drift-css-slow {
+@keyframes letter-drop {
+  0% {
+    transform: translateY(-118vh) rotate(var(--r));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  52% {
+    transform: translateY(0) rotate(calc(var(--r) * -0.18));
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  68% {
+    transform: translateY(-12%) rotate(calc(var(--r) * 0.08));
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  82% {
+    transform: translateY(0) rotate(0);
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  91% {
+    transform: translateY(-3%);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes swing {
+  from {
+    transform: rotate(calc(var(--hang) - 3deg));
+  }
+  to {
+    transform: rotate(calc(var(--hang) + 4deg));
+  }
+}
+@keyframes cursor-drop {
+  from {
+    opacity: 1;
+    transform: rotate(0) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+
+/* Paused: letters simply sit in place (never frozen mid-fall). */
+:root[data-motion="still"] .hero-letter {
+  animation: none;
+}
+
+/* Deferred photos fade in once they arrive. */
+img[data-defer] {
+  opacity: 0;
+}
+img[data-loaded] {
+  animation: photo-in 0.6s var(--ease-ui) both;
+}
+@keyframes photo-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Animated areas never become scroll anchors: nothing inside them should be able
+   to nudge the scroll position. */
+[data-anim-scope],
+[data-depth] {
+  overflow-anchor: none;
+}
+
+/* Paused by the user, or the scope is off-screen: freeze looping animations. */
+:root[data-motion="still"] :is(.engine-hum, .engine-kick, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin, .hero-letter),
+[data-offscreen="true"] :is(.engine-hum, .engine-kick, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin) {
   animation-play-state: paused;
 }
 
@@ -271,8 +656,7 @@ body {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
+    animation: none !important;
     transition-duration: 0.01ms !important;
   }
 }

@@ -1,27 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
 import { setMotionPaused, useMotionPaused, usePrefersReducedMotion } from "../lib/motion";
 import { PauseIcon, PlayIcon, StopIcon } from "./icons";
 
 /**
  * WCAG 2.2.2 (Pause, Stop, Hide): looping motion must be stoppable by the user,
- * not only via the OS setting. Also mirrors the state onto <html data-motion>
- * so CSS-only animations pause too.
+ * not only via the OS setting. MotionDirector applies the state to the page.
+ * Fixed width in every state, so swapping labels never shifts the header.
  */
 export function MotionToggle() {
   const reduced = usePrefersReducedMotion();
   const paused = useMotionPaused();
-  const still = reduced || paused;
-
-  useEffect(() => {
-    document.documentElement.dataset.motion = still ? "still" : "on";
-  }, [still]);
 
   if (reduced) {
     return (
-      <span className="plaque plaque-tag plaque-white text-xs">
-        <StopIcon /> Motion off
+      <span className="plaque plaque-white toggle-plaque text-xs">
+        <StopIcon />
+        <span className="sr-only sm:not-sr-only">Motion off</span>
       </span>
     );
   }
@@ -30,10 +25,10 @@ export function MotionToggle() {
     <button
       type="button"
       onClick={() => setMotionPaused(!paused)}
-      className="plaque plaque-white text-xs"
+      className="plaque plaque-white toggle-plaque text-xs"
     >
       {paused ? <PlayIcon /> : <PauseIcon />}
-      {paused ? "Play motion" : "Pause motion"}
+      <span className="sr-only sm:not-sr-only">{paused ? "Play motion" : "Pause motion"}</span>
     </button>
   );
 }

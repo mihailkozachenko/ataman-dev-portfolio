@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { bubbles } from "../../data/media";
 import type { Service } from "../../data/services";
 import { site } from "../../data/site";
 import { useAnimationGate } from "../../lib/motion";
+import { playPop } from "../../lib/sound";
 import { useDrift } from "../../lib/useDrift";
+import { Photo } from "../media/Picture";
 
-const SIZES = [176, 158, 190, 166];
-const OFFSETS = [40, 0, 80, 20];
+// Different sizes so they read as a loose cluster rising from the machine.
+const SIZES = [196, 162, 214, 172];
+const OFFSETS = [60, 0, 96, 24];
 const DRIFT = { ampX: 14, ampY: 18, speed: 0.5 };
 const POP_MS = 300;
 const DROPS = Array.from({ length: 9 }, (_, k) => ({ angle: k * 40 + (k % 2) * 12, extra: (k % 3) * 14 }));
@@ -30,6 +34,7 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
   const pop = (id: string) => {
     window.clearTimeout(timer.current);
     if (open && open.id !== id) setReforming(open.id);
+    playPop();
     const reveal = () => {
       focusTarget.current = { kind: "heading", id };
       setOpen({ id, phase: "open" });
@@ -68,7 +73,7 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
   return (
     <ul
       ref={listRef}
-      className="mt-12 flex flex-wrap items-start justify-center gap-x-10 gap-y-8 sm:mt-16 sm:justify-start">
+      className="mt-12 flex flex-wrap items-start justify-center gap-x-10 gap-y-8 sm:mt-16 sm:justify-end sm:pr-[4%]">
       {services.map((service, i) => {
         const size = SIZES[i % SIZES.length];
         const isOpen = open?.id === service.id && open.phase === "open";
@@ -89,7 +94,7 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
             {isOpen ? (
               <div
                 id={panelId}
-                className="panel-in w-[min(88vw,330px)] border-2 border-ink bg-paper p-6 shadow-[6px_6px_0_var(--ink)]"
+                className="panel-in label-box w-[min(88vw,330px)] p-6"
                 onKeyDown={(event) => {
                   if (event.key === "Escape") close(service.id);
                 }}
@@ -99,7 +104,7 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
                     headings.current[service.id] = el;
                   }}
                   tabIndex={-1}
-                  className="text-2xl font-bold uppercase leading-none tracking-tight"
+                  className="text-display text-[1.75rem]"
                 >
                   {service.title}
                 </h3>
@@ -142,11 +147,17 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
               >
                 <span
                   aria-hidden="true"
-                  className={`bubble absolute inset-0 ${popping ? "bubble-popping" : reforming === service.id ? "bubble-reform" : ""}`}
+                  className={`absolute inset-0 ${popping ? "bubble-popping" : reforming === service.id ? "bubble-reform" : ""}`}
                   onAnimationEnd={(event) => {
                     if (event.animationName === "bubble-reform") setReforming(null);
                   }}
-                />
+                >
+                  <Photo
+                    photo={bubbles[i % bubbles.length]}
+                    sizes={`${size}px`}
+                    className="h-full w-full object-contain drop-shadow-[0_6px_12px_rgb(13_36_64/0.22)]"
+                  />
+                </span>
                 {popping && (
                   <span aria-hidden="true" className="absolute inset-0">
                     {DROPS.map((drop, k) => (
@@ -163,15 +174,12 @@ export function ServiceBubbles({ services }: { services: Service[] }) {
                     ))}
                   </span>
                 )}
+                {/* Text straight inside the clear bubble: dark on the sky that shows
+                    through it, with a white glow over the iridescent rim. */}
                 <span
-                  className={`relative flex flex-col items-center px-5 text-center transition-opacity duration-150 ${popping ? "opacity-0" : ""}`}
+                  className={`text-glow relative max-w-[68%] text-center text-base font-extrabold uppercase leading-tight tracking-[-0.02em] transition-opacity duration-150 sm:text-lg ${popping ? "opacity-0" : ""}`}
                 >
-                  <span className="text-base font-bold uppercase leading-tight tracking-tight sm:text-lg">
-                    {service.title}
-                  </span>
-                  <span aria-hidden="true" className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em]">
-                    pop me
-                  </span>
+                  {service.title}
                   <span className="sr-only">, show details</span>
                 </span>
               </button>

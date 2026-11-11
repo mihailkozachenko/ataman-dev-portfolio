@@ -1,16 +1,39 @@
 "use client";
 
+import { getImageProps } from "next/image";
 import { useEffect, useRef, type RefObject } from "react";
-import type { MachineConfig } from "../../data/machines";
-import { mulberry32 } from "../../lib/random";
+import { bubbles } from "../../data/media";
+
+export type Emitter = {
+  /** Fraction of the emitter element's box. */
+  nozzle: { x: number; y: number };
+  /** Stream direction, degrees (0 = right, -90 = up). */
+  angle: number;
+};
 
 type Props = {
   containerRef: RefObject<HTMLElement | null>;
   emitterRef: RefObject<HTMLElement | null>;
-  machine: MachineConfig;
+  emitter: Emitter;
   active: boolean;
   still: boolean;
 };
+
+// Small renditions of the bubble photos; the 64px box is scaled per bubble.
+const BUBBLE_IMGS = bubbles.map(
+  (b) => getImageProps({ src: b.src, width: b.width, height: b.height, alt: "", sizes: "96px" }).props,
+);
+
+/** Deterministic PRNG so the stream's rhythm is the same on every visit. */
+function mulberry32(seed: number) {
+  let a = seed | 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 type Bubble = {
   alive: boolean;
@@ -43,11 +66,11 @@ const STATIC_LAYOUT = [
 ];
 
 /** Decorative soap bubbles blown from the machine's wand. Pooled DOM nodes, one rAF loop. */
-export function BubbleStream({ containerRef, emitterRef, machine, active, still }: Props) {
-  const els = useRef<(HTMLSpanElement | null)[]>([]);
+export function BubbleStream({ containerRef, emitterRef, emitter, active, still }: Props) {
+  const els = useRef<(HTMLImageElement | null)[]>([]);
   const pool = useRef<Bubble[]>([]);
   const warmed = useRef(false);
-  const { nozzle, angle } = machine;
+  const { nozzle, angle } = emitter;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -79,7 +102,7 @@ export function BubbleStream({ containerRef, emitterRef, machine, active, still 
       scaleK = mobile ? 0.75 : 1;
     };
 
-    const place = (el: HTMLSpanElement, x: number, y: number, size: number, opacity: number) => {
+    const place = (el: HTMLImageElement, x: number, y: number, size: number, opacity: number) => {
       el.style.transform = `translate3d(${(x - BASE / 2).toFixed(1)}px, ${(y - BASE / 2).toFixed(1)}px, 0) scale(${(size / BASE).toFixed(3)})`;
       el.style.opacity = opacity.toFixed(2);
     };
@@ -125,7 +148,7 @@ export function BubbleStream({ containerRef, emitterRef, machine, active, still 
       b.vy = Math.sin(a) * speed;
       b.age = 0;
       b.life = 5 + rnd() * 4;
-      b.size = (18 + rnd() * 44) * scaleK;
+      b.size = (22 + rnd() * 58) * scaleK;
       b.seed = rnd();
     };
 
@@ -194,15 +217,21 @@ export function BubbleStream({ containerRef, emitterRef, machine, active, still 
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-[1]">
-      {Array.from({ length: POOL }, (_, i) => (
-        <span
-          key={i}
-          ref={(el) => {
-            els.current[i] = el;
-          }}
-          className="bubble bubble-deco"
-        />
-      ))}
+      {Array.from({ length: POOL }, (_, i) => {
+        const img = BUBBLE_IMGS[i % BUBBLE_IMGS.length];
+        return (
+          // eslint-disable-next-line @next/next/no-img-element -- optimised via getImageProps
+          <img
+            key={i}
+            {...img}
+            alt=""
+            ref={(el) => {
+              els.current[i] = el;
+            }}
+            className="bubble-deco object-contain"
+          />
+        );
+      })}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { site } from "../data/site";
 import { Container } from "./Container";
 import { MotionToggle } from "./MotionToggle";
+import { SoundToggle } from "./SoundToggle";
 
 const LINKS = [
   { href: "#projects", label: "Projects", tone: "plaque-lime" },
@@ -11,7 +12,7 @@ const LINKS = [
 export function Nav() {
   return (
     <header className="relative z-20">
-      <Container className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 pt-5">
+      <Container className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 pt-6">
         <a href="#top" className="plaque plaque-white text-sm">
           {site.name}
         </a>
@@ -26,7 +27,10 @@ export function Nav() {
             ))}
           </ul>
         </nav>
-        <MotionToggle />
+        <div className="flex gap-3">
+          <MotionToggle />
+          <SoundToggle />
+        </div>
       </Container>
     </header>
   );

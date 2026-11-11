@@ -1,5 +1,15 @@
 import type { Metadata, Viewport } from "next";
+import { Archivo } from "next/font/google";
 import "./globals.css";
+
+// Variable-weight grotesque. Latin only (covers á/í/é etc. used on the page) and
+// no width axis: one small preloaded file instead of ~176 KB, which kept the
+// first text paint (LCP) waiting on mobile.
+const archivo = Archivo({
+  subsets: ["latin"],
+  variable: "--font-archivo",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Ataman Dev — AI Web Developer",
@@ -23,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={archivo.variable}>
       <body>{children}</body>
     </html>
   );

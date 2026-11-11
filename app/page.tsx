@@ -1,9 +1,12 @@
 import { BubbleSection } from "./components/bubbles/BubbleSection";
-import { Contact } from "./components/Contact";
+import { BubbleCursor } from "./components/experience/BubbleCursor";
+import { SmoothScroll } from "./components/experience/SmoothScroll";
 import { FogSection } from "./components/fog/FogSection";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
+import { MotionDirector } from "./components/MotionDirector";
 import { Nav } from "./components/Nav";
+import { SkyDecor } from "./components/sky/SkyDecor";
 
 export default function Home() {
   return (
@@ -14,14 +17,24 @@ export default function Home() {
       >
         Skip to content
       </a>
-      <Nav />
-      <main id="main">
-        <Hero />
-        <FogSection />
-        <BubbleSection />
-        <Contact />
-      </main>
-      <Footer />
+      {/* Vertical descent: sky → clouds → grass. Cloud layers span the whole page. */}
+      <div className="relative overflow-x-clip">
+        <SkyDecor />
+        <div className="relative">
+          <Nav />
+          <main id="main">
+            <Hero />
+            <FogSection />
+            <BubbleSection />
+          </main>
+          <Footer />
+        </div>
+      </div>
+      <MotionDirector />
+      <SmoothScroll />
+      <BubbleCursor />
+      {/* Static film grain over the whole page. */}
+      <div aria-hidden="true" className="film-grain" />
     </>
   );
 }

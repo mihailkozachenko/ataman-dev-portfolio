@@ -6,7 +6,13 @@ export type Project = {
   url: string;
 };
 
+// Order = position along the smoke plume, from the nozzle upwards.
 export const projects: Project[] = [
+  {
+    name: "UKOL",
+    description: "AI quotes for Czech tradesmen — photo + voice → ready nabídka.",
+    url: "https://ukol.app",
+  },
   {
     name: "DokliCZ",
     description: "AI decoder for Czech official letters, in Russian and Ukrainian.",

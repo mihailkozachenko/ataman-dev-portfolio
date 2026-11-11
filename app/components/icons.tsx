@@ -37,6 +37,14 @@ export function PlayIcon({ className }: IconProps) {
   return <PixelIcon className={className} d="M2 1h1v6H2zM3 2h1v4H3zM4 3h1v2H4zM5 3.5h1v1H5z" />;
 }
 
+export function SoundOnIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M1 3h2l2-2h1v6H5L3 5H1zM7 2h1v1H7zM7 5h1v1H7zM7 3.5h1v1H7z" />;
+}
+
+export function SoundOffIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M1 3h2l2-2h1v6H5L3 5H1zM6.5 2.5h1v1h-1zM6.5 4.5h1v1h-1z" />;
+}
+
 export function StopIcon({ className }: IconProps) {
   return <PixelIcon className={className} d="M1 1h6v6H1z" />;
 }
