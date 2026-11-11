@@ -1,78 +1,42 @@
+// Pixel-style icons drawn on an 8×8 grid. Inline SVG instead of Unicode glyphs
+// (↗ ↓ ▶ ❚❚): those aren't in Arial/Helvetica, and each one makes the browser
+// scan system fonts for a fallback during the first layout.
+
 type IconProps = {
   className?: string;
 };
 
+function PixelIcon({ d, className }: { d: string; className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 8 8"
+      fill="currentColor"
+      shapeRendering="crispEdges"
+      aria-hidden="true"
+      focusable="false"
+      className={className ?? "h-[0.8em] w-[0.8em]"}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
 export function ArrowUpRightIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M7 17L17 7M17 7H9M17 7V15" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <PixelIcon className={className} d="M2 1h5v5H6V3H5v1H4v1H3v1H2v1H1V6h1V5h1V4h1V3h1V2H2z" />;
 }
 
-export function SendIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M21 3L3 10.5L10.5 13.5M21 3L15 21L10.5 13.5M21 3L10.5 13.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+export function ArrowDownIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M3 0h2v4h2v1H6v1H5v1H3V6H2V5H1V4h2z" />;
 }
 
-export function PlusIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M12 5V19M5 12H19" strokeLinecap="round" />
-    </svg>
-  );
+export function PauseIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M1 1h2v6H1zM5 1h2v6H5z" />;
 }
 
-export function MenuIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M4 7H20M4 12H20M4 17H20" strokeLinecap="round" />
-    </svg>
-  );
+export function PlayIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M2 1h1v6H2zM3 2h1v4H3zM4 3h1v2H4zM5 3.5h1v1H5z" />;
 }
 
-export function CloseIcon({ className }: IconProps) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M6 6L18 18M18 6L6 18" strokeLinecap="round" />
-    </svg>
-  );
+export function StopIcon({ className }: IconProps) {
+  return <PixelIcon className={className} d="M1 1h6v6H1z" />;
 }

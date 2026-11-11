@@ -1,28 +1,40 @@
+import { site } from "../data/site";
 import { Container } from "./Container";
-import { Reveal } from "./Reveal";
-import { SendIcon } from "./icons";
+import { PixelCloud } from "./PixelCloud";
 
 export function Contact() {
   return (
-    <section id="contact" className="py-24 sm:py-32">
-      <Container>
-        <Reveal className="flex flex-col items-start gap-8 rounded-[19.2px] border border-almost-white/15 bg-almost-white/[0.03] px-8 py-16 sm:px-16 sm:py-20">
-          <h2 className="max-w-2xl font-display text-[32px] italic font-light leading-tight text-lavender-mist sm:text-[48px]">
+    <section id="contact" aria-labelledby="contact-title" className="relative overflow-hidden py-24 sm:py-32">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="checker absolute right-[4%] top-[10%] h-[55%] w-[38%]" />
+        <PixelCloud
+          seed={41}
+          className="drift-css-slow absolute -right-[4%] bottom-[2%] w-[40vw] max-w-[420px]"
+        />
+      </div>
+
+      <Container className="relative">
+        <div className="max-w-3xl border-2 border-ink bg-paper p-8 shadow-[8px_8px_0_var(--ink)] sm:p-14">
+          <p className="plaque plaque-tag plaque-lime text-xs">03 · Signal</p>
+          <h2
+            id="contact-title"
+            className="mt-6 text-[clamp(2.5rem,8vw,5.5rem)] font-bold uppercase leading-[0.88] tracking-[-0.04em]"
+          >
             Got a project in mind?
           </h2>
-          <p className="max-w-xl font-sans text-lg font-light text-steel">
+          <p className="mt-6 max-w-xl text-lg font-medium text-ink-soft sm:text-xl">
             Tell me what you need — I&apos;ll get back to you on Telegram.
           </p>
           <a
-            href="https://t.me/AtamanApp"
+            href={site.telegram}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-[1584px] bg-signal-violet px-8 py-4 font-sans text-base font-medium text-near-black transition-opacity hover:opacity-90"
+            className="plaque plaque-red mt-8 text-base"
           >
-            <SendIcon className="h-4 w-4" />
-            Contact me
+            Message me on Telegram
+            <span className="sr-only"> (opens in a new tab)</span>
           </a>
-        </Reveal>
+        </div>
       </Container>
     </section>
   );

@@ -1,19 +1,20 @@
+import { site } from "../data/site";
 import { Container } from "./Container";
 
 export function Footer() {
   return (
-    <footer className="border-t border-almost-white/10">
-      <Container className="flex flex-col gap-4 py-8 font-sans text-sm text-ash sm:flex-row sm:items-center sm:justify-between">
-        <span>
-          Ataman Dev <span className="text-graphite">— AI Web Developer</span>
+    <footer className="border-t-2 border-ink bg-paper">
+      <Container className="flex flex-col gap-4 py-6 text-sm font-medium sm:flex-row sm:items-center sm:justify-between">
+        <span className="uppercase tracking-wide">
+          {site.name} — {site.role}
         </span>
         <a
-          href="https://t.me/AtamanApp"
+          href={site.telegram}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-ash transition-colors hover:text-almost-white"
+          className="underline decoration-2 underline-offset-4 hover:decoration-plaque-red"
         >
-          Telegram
+          Telegram<span className="sr-only"> (opens in a new tab)</span>
         </a>
       </Container>
     </footer>

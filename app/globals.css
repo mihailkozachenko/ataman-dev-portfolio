@@ -1,57 +1,278 @@
 @import "tailwindcss";
 
 :root {
-  --color-near-black: #090909;
-  --color-almost-white: #f7f9fa;
-  --color-soft-white: #f0f0f0;
-  --color-steel: #828384;
-  --color-graphite: #474747;
-  --color-iron: #423738;
-  --color-ash: #6b6b6b;
-  --color-signal-violet: #af50ff;
-  --color-lavender-mist: #e1bdff;
-
-  --section-gap: 96px;
+  --sky-top: #3f9cff;
+  --sky-mid: #86c5ff;
+  --sky-low: #c4e3ff;
+  --sky-floor: #eaf5ff;
+  --ink: #0a0a0a;
+  --ink-soft: #0d2440;
+  --plaque-red: #d70600;
+  --plaque-lime: #b8ff2e;
+  --paper: #ffffff;
+  --checker-a: #ffffff;
+  --checker-b: #cdcdcd;
 }
 
 @theme inline {
-  --color-near-black: var(--color-near-black);
-  --color-almost-white: var(--color-almost-white);
-  --color-soft-white: var(--color-soft-white);
-  --color-steel: var(--color-steel);
-  --color-graphite: var(--color-graphite);
-  --color-iron: var(--color-iron);
-  --color-ash: var(--color-ash);
-  --color-signal-violet: var(--color-signal-violet);
-  --color-lavender-mist: var(--color-lavender-mist);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-plaque-red: var(--plaque-red);
+  --color-plaque-lime: var(--plaque-lime);
+  --color-paper: var(--paper);
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
-  --font-display: var(--font-lora), ui-serif, Georgia, serif;
-
-  --radius-card: 19.2px;
-  --radius-pill: 1584px;
-  --radius-button: 8px;
-  --radius-control: 6px;
+  --font-sans: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", "Nimbus Sans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 html {
+  background-color: var(--sky-mid);
   scroll-behavior: smooth;
 }
 
 body {
-  background: var(--color-near-black);
-  color: var(--color-almost-white);
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    var(--sky-top) 0%,
+    var(--sky-mid) 28%,
+    var(--sky-low) 62%,
+    var(--sky-floor) 100%
+  );
+  color: var(--ink);
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--color-signal-violet);
-  color: var(--color-near-black);
+  background: var(--plaque-lime);
+  color: var(--ink);
+}
+
+/* Two-tone ring: a white halo hugging the element, then a black outline.
+   Visible on sky, fog, white clouds and red/lime plaques alike. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--paper);
+}
+
+@layer components {
+  /* "Transparent PNG" checkerboard peeking through the sky. */
+  .checker {
+    background-color: var(--checker-a);
+    background-image: conic-gradient(
+      var(--checker-b) 25%,
+      transparent 0 50%,
+      var(--checker-b) 0 75%,
+      transparent 0
+    );
+    background-size: 24px 24px;
+  }
+
+  .plaque {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    min-height: 44px;
+    padding: 0.55em 0.9em;
+    border: 2px solid var(--ink);
+    box-shadow: 4px 4px 0 var(--ink);
+    color: var(--ink);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition:
+      transform 0.12s ease-out,
+      box-shadow 0.12s ease-out;
+  }
+  .plaque-tag {
+    min-height: 0;
+    padding: 0.45em 0.7em;
+    box-shadow: none;
+  }
+  .plaque-red {
+    background: var(--plaque-red);
+    color: var(--paper);
+  }
+  .plaque-lime {
+    background: var(--plaque-lime);
+  }
+  .plaque-white {
+    background: var(--paper);
+  }
+  a.plaque:hover,
+  button.plaque:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+  a.plaque:active,
+  button.plaque:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--ink);
+  }
+
+  /* Hover / focus "lift" for clouds and service bubbles. */
+  .floaty {
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .floaty:hover,
+  .floaty:focus-visible {
+    transform: scale(1.07);
+  }
+
+  /* ---------- soap bubbles ---------- */
+  .bubble {
+    position: relative;
+    display: block;
+    border-radius: 9999px;
+    background: radial-gradient(
+      circle,
+      rgb(255 255 255 / 0.1) 0 56%,
+      rgb(255 255 255 / 0.32) 70%,
+      rgb(255 255 255 / 0.85) 94%,
+      rgb(255 255 255 / 0.2) 100%
+    );
+  }
+  /* Iridescent film: a rotating conic gradient masked to the rim. Rotation is
+     compositor-only, so it stays cheap even with a dozen bubbles. */
+  .bubble::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: conic-gradient(
+      from 20deg,
+      #ff8fe0,
+      #8ff0ff,
+      #fff38f,
+      #a6ffb0,
+      #b99cff,
+      #ff8fe0
+    );
+    -webkit-mask: radial-gradient(circle, transparent 0 58%, #000 76% 93%, transparent 100%);
+    mask: radial-gradient(circle, transparent 0 58%, #000 76% 93%, transparent 100%);
+    opacity: 0.6;
+    animation: bubble-film 7s linear infinite;
+  }
+  /* Specular highlight. */
+  .bubble::after {
+    content: "";
+    position: absolute;
+    left: 19%;
+    top: 15%;
+    width: 28%;
+    height: 18%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at center, #fff 0 35%, rgb(255 255 255 / 0) 70%);
+    transform: rotate(-35deg);
+  }
+  .bubble-deco {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 64px;
+    height: 64px;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+  .bubble-popping {
+    animation: bubble-pop 0.28s ease-out forwards;
+  }
+  .bubble-reform {
+    animation: bubble-reform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
+  }
+  .pop-drop {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 10px;
+    height: 10px;
+    margin: -5px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.95);
+    box-shadow: 0 0 0 1px rgb(13 36 64 / 0.25);
+    animation: pop-drop 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+  }
+  .panel-in {
+    animation: panel-in 0.25s ease-out backwards;
+  }
+
+  /* Slow CSS drift for purely decorative hero clouds. */
+  .drift-css {
+    animation: drift-x 38s ease-in-out infinite alternate;
+  }
+  .drift-css-slow {
+    animation: drift-x 56s ease-in-out infinite alternate-reverse;
+  }
+}
+
+@keyframes bubble-film {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes bubble-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+@keyframes bubble-reform {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes pop-drop {
+  from {
+    transform: rotate(var(--a)) translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0.2);
+    opacity: 0;
+  }
+}
+@keyframes panel-in {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+@keyframes drift-x {
+  from {
+    transform: translateX(-3vw);
+  }
+  to {
+    transform: translateX(3vw);
+  }
+}
+
+/* User pressed "Pause motion". */
+:root[data-motion="still"] .bubble::before,
+:root[data-motion="still"] .drift-css,
+:root[data-motion="still"] .drift-css-slow {
+  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

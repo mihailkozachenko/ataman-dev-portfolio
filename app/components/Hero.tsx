@@ -1,105 +1,66 @@
-"use client";
-
-import { motion, MotionConfig, type Variants } from "framer-motion";
-import { CloudScene } from "./CloudScene";
+import { site } from "../data/site";
 import { Container } from "./Container";
-import { PlaneTrail } from "./PlaneTrail";
-import { ScanCard } from "./ScanCard";
-import { SendIcon } from "./icons";
-
-const container: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.12, delayChildren: 0.15 },
-  },
-};
-
-const item: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
-};
-
-const cardItem: Variants = {
-  hidden: { opacity: 0, x: 40 },
-  show: { opacity: 1, x: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
-};
+import { ArrowDownIcon } from "./icons";
+import { PixelCloud } from "./PixelCloud";
 
 export function Hero() {
   return (
-    <MotionConfig reducedMotion="user">
-      <section id="top" className="relative flex min-h-screen items-center overflow-hidden pt-24">
-        <CloudScene />
-        <PlaneTrail />
+    <section id="top" aria-labelledby="hero-title" className="relative overflow-hidden">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="checker absolute right-[7%] top-[12%] h-[34%] w-[30%] min-w-[140px]" />
+        <div className="checker absolute bottom-[10%] left-[38%] h-14 w-28 sm:h-20 sm:w-44" />
+        <PixelCloud
+          seed={3}
+          className="drift-css absolute -left-[6%] top-[6%] w-[46vw] max-w-[460px] opacity-95"
+        />
+        <PixelCloud
+          seed={17}
+          cols={30}
+          rows={16}
+          className="drift-css-slow absolute right-[2%] top-[40%] w-[34vw] max-w-[360px]"
+        />
+        <PixelCloud
+          seed={29}
+          cols={24}
+          rows={14}
+          className="drift-css absolute bottom-[4%] right-[30%] w-[22vw] max-w-[220px] opacity-90"
+        />
+      </div>
 
-        <Container className="relative">
-          <motion.div
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="flex flex-col gap-14 lg:flex-row lg:items-center lg:justify-between"
+      <Container className="relative pb-24 pt-14 sm:pb-32 sm:pt-20">
+        <p className="plaque plaque-tag plaque-red text-xs sm:text-sm">Available for new projects</p>
+
+        <h1
+          id="hero-title"
+          className="mt-6 text-[clamp(3.75rem,16vw,13rem)] font-bold uppercase leading-[0.82] tracking-[-0.055em]"
+        >
+          Ataman
+          <br />
+          Dev
+        </h1>
+
+        <p className="plaque plaque-tag plaque-lime mt-6 text-lg sm:text-2xl">{site.role}</p>
+
+        <p className="mt-8 max-w-xl text-lg font-medium leading-snug text-ink-soft sm:text-2xl">
+          I build web applications with AI, authentication and payments. Fast delivery, honest
+          prices.
+        </p>
+
+        <div className="mt-10 flex flex-wrap gap-4">
+          <a
+            href={site.telegram}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="plaque plaque-red text-base"
           >
-            <div className="max-w-2xl">
-              <motion.p
-                variants={item}
-                className="font-mono text-xs uppercase tracking-[0.2em] text-steel"
-              >
-                Available for new projects
-              </motion.p>
-
-              <motion.h1
-                variants={item}
-                className="mt-6 flex flex-col font-sans font-light leading-[0.95] text-almost-white"
-              >
-                <span className="font-display text-[40px] italic font-light text-lavender-mist sm:text-[56px]">
-                  Hi, I&apos;m
-                </span>
-                <span className="text-[64px] tracking-[-0.02em] sm:text-[88px]">Ataman Dev</span>
-                <span className="font-display text-[32px] italic font-light text-lavender-mist sm:text-[48px]">
-                  AI Web Developer
-                </span>
-              </motion.h1>
-
-              <motion.p
-                variants={item}
-                className="mt-8 max-w-xl font-sans text-lg font-light leading-relaxed text-steel"
-              >
-                I build web applications with AI, authentication and payments. Fast delivery,
-                honest prices.
-              </motion.p>
-
-              <div className="mt-10 flex flex-wrap gap-4">
-                <motion.a
-                  variants={item}
-                  href="https://t.me/AtamanApp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 32px 4px rgba(175,80,255,0.45)" }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="inline-flex items-center gap-2 rounded-[1584px] bg-signal-violet px-8 py-4 font-sans text-base font-medium text-near-black"
-                >
-                  <SendIcon className="h-4 w-4" />
-                  Contact me
-                </motion.a>
-                <motion.a
-                  variants={item}
-                  href="#projects"
-                  whileHover={{ scale: 1.05, boxShadow: "0 0 24px 2px rgba(247,249,250,0.15)" }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="inline-flex items-center rounded-[8px] border border-almost-white/30 px-8 py-4 font-sans text-base text-almost-white"
-                >
-                  View projects
-                </motion.a>
-              </div>
-            </div>
-
-            <motion.div variants={cardItem} className="hidden lg:block lg:w-[380px] lg:shrink-0">
-              <ScanCard />
-            </motion.div>
-          </motion.div>
-        </Container>
-      </section>
-    </MotionConfig>
+            Contact me
+            <span className="sr-only"> on Telegram (opens in a new tab)</span>
+          </a>
+          <a href="#projects" className="plaque plaque-white text-base">
+            Float to projects <ArrowDownIcon />
+          </a>
+        </div>
+      </Container>
+    </section>
   );
 }
