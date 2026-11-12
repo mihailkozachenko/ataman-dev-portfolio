@@ -1,3 +1,4 @@
+import { AreYouReal } from "./components/decor/AreYouReal";
 import { BubbleSection } from "./components/bubbles/BubbleSection";
 import { BubbleCursor } from "./components/experience/BubbleCursor";
 import { FogSection } from "./components/fog/FogSection";
@@ -23,6 +24,7 @@ export default function Home() {
           <Nav />
           <main id="main">
             <Hero />
+            <AreYouReal />
             <FogSection />
             <BubbleSection />
           </main>

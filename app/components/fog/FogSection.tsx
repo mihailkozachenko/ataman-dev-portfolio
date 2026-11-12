@@ -4,6 +4,7 @@ import { Container } from "../Container";
 import { MissingImage } from "../decor/Collage";
 import { DissolveTitle } from "../letters/DissolveTitle";
 import { Photo } from "../media/Picture";
+import { MediaPlayer } from "./MediaPlayer";
 import { ProjectClouds } from "./ProjectClouds";
 import { SmokeMass } from "./SmokeMass";
 
@@ -55,6 +56,12 @@ export function FogSection() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* projects.wmv: bottom right of the scene, under the big cloud and
+              clear of the bald spot (desktop); after the machine, centred (phones). */}
+          <div className="relative z-30 mx-auto mt-10 w-[min(100%,300px)] lg:mx-0 lg:absolute lg:bottom-[1%] lg:right-[11%] lg:mt-0 lg:w-[29cqw]">
+            <MediaPlayer />
           </div>
         </div>
       </Container>

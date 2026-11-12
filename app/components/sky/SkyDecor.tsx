@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { cloudAnim, clouds } from "../../data/media";
 import { AnimatedImage, Photo } from "../media/Picture";
+import { CloudEye } from "./CloudEye";
 
 type Layer = {
   kind: "cloud-1" | "cloud-2" | "anim";
@@ -17,6 +18,8 @@ type Layer = {
   flip?: boolean;
   /** Far layers are skipped on phones. */
   desktopOnly?: boolean;
+  /** The one cloud with an eye in it. */
+  eye?: boolean;
 };
 
 // Three depths: far (small, faint, soft) · mid · near (big, crisp). Placed in
@@ -35,7 +38,7 @@ const LAYERS: Layer[] = [
   // A real cloud right above the green-lit one.
   { kind: "cloud-1", top: 53.6, left: 76, vw: 22, max: 340, depth: 0.15, opacity: 0.85, desktopOnly: true },
   // near
-  { kind: "cloud-2", top: 19, left: 58, vw: 40, max: 620, depth: 0.05, opacity: 0.95 },
+  { kind: "cloud-2", top: 19, left: 58, vw: 40, max: 620, depth: 0.05, opacity: 0.95, eye: true },
   { kind: "cloud-1", top: 68, left: 0, vw: 24, max: 360, depth: 0.05, opacity: 0.95, flip: true, desktopOnly: true },
 ];
 
@@ -68,6 +71,8 @@ export function SkyDecor() {
                 className="h-auto w-full"
               />
             )}
+            {/* Weirdcore: one eye in one cloud, in its densest white part. */}
+            {layer.eye && <CloudEye x={clouds[1].text.x} y={clouds[1].text.y} />}
           </div>
         );
       })}

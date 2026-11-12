@@ -159,10 +159,15 @@ export function FieldDoor() {
       layer.className = "door-zoom";
       layer.setAttribute("aria-hidden", "true");
       Object.assign(layer.style, { left: `${(vw - w) / 2}px`, top: `${(vh - h) / 2}px`, width: `${w}px`, height: `${h}px` });
-      const img = document.createElement("img");
-      img.src = door.portal.src;
-      img.alt = "";
-      layer.appendChild(img);
+      // Underneath, the rendition already on screen (cached: shows at once);
+      // on top, the full-size one, sharp once it has loaded (slow networks).
+      for (const src of [portalImg.current?.currentSrc, door.portal.src]) {
+        if (!src) continue;
+        const img = document.createElement("img");
+        img.src = src;
+        img.alt = "";
+        layer.appendChild(img);
+      }
       document.body.appendChild(layer);
       const dx = from.left + from.width / 2 - vw / 2;
       const dy = from.top + from.height / 2 - vh / 2;

@@ -1435,3 +1435,552 @@ img[data-loaded] {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ================= weirdcore details ================= */
+@layer components {
+  /* ---------- the rainbow beside "are you real?" ----------
+     As on the reference: a broad bow whose left leg climbs steeply just right
+     of the four lines and bends away to the right above them. A slice of one
+     big circle (centre down and to the right, off-screen), half transparent,
+     soft-edged, in a band that fades out above (before the hero's text) and
+     below (before the Projects title). Violet inside, red outside. */
+  .ayr-sky {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -110px;
+    bottom: -70px;
+    overflow: hidden;
+    pointer-events: none;
+    /* Light added to the sky, as a real rainbow is: it glows on the blue and
+       vanishes on a white cloud, as if behind it. */
+    mix-blend-mode: screen;
+    -webkit-mask: linear-gradient(to bottom, transparent, #000 32%, #000 62%, transparent);
+    mask: linear-gradient(to bottom, transparent, #000 32%, #000 62%, transparent);
+  }
+  .ayr-rainbow {
+    /* Leg crosses the band's middle at x = --leg, rising at ~70°. */
+    --leg: 70vw;
+    --r: 78vw;
+    position: absolute;
+    left: calc(var(--leg) + var(--r) * 0.94 - var(--r));
+    top: calc(50% + var(--r) * 0.34 - var(--r));
+    width: calc(var(--r) * 2);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+      closest-side,
+      transparent 0 83%,
+      rgb(150 90 230 / 0.8) 85%,
+      rgb(60 110 245 / 0.9) 87.2%,
+      rgb(50 190 120 / 0.9) 89.4%,
+      rgb(255 232 90 / 0.95) 91.4%,
+      rgb(255 150 60 / 0.92) 93.2%,
+      rgb(235 60 60 / 0.85) 95%,
+      transparent 96.6%
+    );
+    filter: blur(3px);
+    opacity: 0.5;
+    animation: rainbow-breathe 11s ease-in-out infinite;
+  }
+  @media (min-width: 640px) {
+    .ayr-rainbow {
+      --leg: 58vw;
+      --r: 52vw;
+      filter: blur(4px);
+    }
+  }
+  @media (min-width: 1024px) {
+    .ayr-rainbow {
+      --leg: 56vw;
+      --r: 48vw;
+    }
+  }
+
+  /* ---------- "are you real?" ----------
+     Four lines in the sky between the hero and Projects, stepped to the right,
+     in the old system font. JS scrubs each line in from "right at the viewer"
+     (big, blurred, clear) to its place, with the scroll. */
+  /* As on the reference: plain regular system sans, tight leading, each line
+     a short step further right, a hazy grey you can see the sky through. */
+  .ayr {
+    font-family: var(--font-xp);
+    font-size: clamp(1.25rem, 3vw, 2.75rem);
+    font-weight: 400;
+    line-height: 1.02;
+    letter-spacing: 0;
+    color: rgb(150 156 182 / 0.66);
+    pointer-events: none;
+    user-select: none;
+  }
+  .ayr-line {
+    position: relative;
+    width: max-content;
+    margin: 0;
+    padding-left: calc(var(--i) * 0.55em);
+    will-change: transform, opacity, filter;
+  }
+  /* Hidden until the script takes over (motion on); without JS or with
+     reduced motion they simply stand in place. */
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    .ayr:not([data-live]) .ayr-line {
+      opacity: 0;
+    }
+  }
+  .ayr-word {
+    position: relative;
+    display: inline-block;
+  }
+  /* The glitch: the line torn into three bands that jump apart for ~150 ms. */
+  .ayr-slice {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+  .ayr-slice:nth-child(2) {
+    clip-path: inset(0 0 64% 0);
+  }
+  .ayr-slice:nth-child(3) {
+    clip-path: inset(36% 0 30% 0);
+  }
+  .ayr-slice:nth-child(4) {
+    clip-path: inset(70% 0 0 0);
+  }
+  .ayr-word[data-glitch] .ayr-text {
+    opacity: 0;
+  }
+  .ayr-word[data-glitch] .ayr-slice {
+    opacity: 1;
+  }
+  .ayr-word[data-glitch] .ayr-slice:nth-child(2) {
+    animation: ayr-tear-a 0.15s steps(3) both;
+  }
+  .ayr-word[data-glitch] .ayr-slice:nth-child(3) {
+    animation: ayr-tear-b 0.15s steps(3) both;
+    text-shadow: -2px 0 rgb(120 220 255 / 0.55);
+  }
+  .ayr-word[data-glitch] .ayr-slice:nth-child(4) {
+    animation: ayr-tear-c 0.15s steps(3) both;
+  }
+
+  /* ---------- projects.wmv — Windows Media Player ---------- */
+  .wmp {
+    position: relative;
+    z-index: 30;
+    font-family: var(--font-xp);
+    font-size: 12px;
+    color: var(--ink);
+  }
+  .wmp-window {
+    width: 100%;
+    border: 1px solid var(--xp-edge);
+    border-radius: 8px 8px 3px 3px;
+    background: var(--xp-face);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.5),
+      0 14px 32px rgb(5 25 80 / 0.32);
+  }
+  /* Closed: keeps its place (nothing below moves), just not shown. */
+  .wmp-window[data-closed] {
+    visibility: hidden;
+  }
+  .wmp .xp-bar {
+    height: 30px;
+    padding: 0 4px 0 8px;
+    border-radius: 7px 7px 0 0;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.38), rgb(255 255 255 / 0.06) 32%, transparent 52%),
+      linear-gradient(180deg, #3d95ff 0%, #0a64f0 18%, #0058e6 55%, #0050d8 85%, #0a3fb0 100%);
+    font-size: 12px;
+  }
+  .wmp-title {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.4);
+  }
+  .wmp-title span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .wmp-title svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
+  }
+  @media (min-width: 1024px) and (pointer: fine) {
+    .wmp-drag {
+      cursor: grab;
+      touch-action: none;
+    }
+    .wmp-drag:active {
+      cursor: grabbing;
+    }
+  }
+  .wmp-caps {
+    display: flex;
+    flex: none;
+    gap: 2px;
+  }
+  .wmp-caps .xp-cap,
+  .wmp-close {
+    width: 21px;
+    height: 21px;
+  }
+  .wmp-close {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid var(--paper);
+    border-radius: 3px;
+    background: radial-gradient(circle at 30% 25%, #f2a18a, var(--xp-close) 60%, #c2401f);
+    color: var(--paper);
+    cursor: pointer;
+  }
+  .wmp-close svg {
+    width: 10px;
+    height: 10px;
+  }
+  .wmp-close:focus-visible,
+  .wmp-drag:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+  /* Decorative menu bar. */
+  .wmp-menu u {
+    text-underline-offset: 1px;
+  }
+  .wmp-menu {
+    display: flex;
+    gap: 14px;
+    padding: 3px 9px;
+    border-bottom: 1px solid #c9c4ad;
+    color: #3a3a3a;
+  }
+  .wmp-screen-wrap {
+    padding: 6px 6px 0;
+  }
+  .wmp-screen {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid #1b1b1b;
+    background: #050608;
+    isolation: isolate;
+  }
+  .wmp-screen:focus-visible {
+    outline: 3px solid var(--xp-focus-in);
+    outline-offset: 2px;
+  }
+  .wmp-reel {
+    position: absolute;
+    inset: 0;
+    /* Tape colours: a little bled and soft. */
+    filter: url(#wmp-vhs) saturate(1.15) contrast(1.05) blur(0.35px);
+  }
+  .wmp-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform-origin: 50% 50%;
+    transition: opacity 0.7s ease;
+  }
+  .wmp-slide[data-on] {
+    opacity: 1;
+  }
+  /* Scanlines and a soft vignette. */
+  .wmp-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.2) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at 50% 50%, transparent 60%, rgb(0 0 0 / 0.35));
+  }
+  .wmp-noise {
+    position: absolute;
+    inset: -50%;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0.12;
+    mix-blend-mode: screen;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -0.2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: wmp-noise 0.5s steps(5) infinite;
+  }
+  .wmp:not([data-state="playing"]) .wmp-noise {
+    animation-play-state: paused;
+  }
+  /* VHS on-screen display. */
+  .wmp-osd {
+    position: absolute;
+    z-index: 4;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgb(255 255 255 / 0.9);
+    text-shadow: 1px 0 rgb(255 60 60 / 0.4), -1px 0 rgb(60 200 255 / 0.4), 0 0 3px rgb(0 0 0 / 0.8);
+    pointer-events: none;
+  }
+  .wmp-osd-state {
+    left: 7px;
+    top: 5px;
+  }
+  .wmp-osd-time {
+    right: 7px;
+    bottom: 5px;
+  }
+  .wmp-status {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px 0;
+    color: #2a2a2a;
+    white-space: nowrap;
+  }
+  .wmp-status span:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Seek bar: shows the reel's position. */
+  .wmp-progress {
+    position: relative;
+    height: 6px;
+    margin: 5px 8px 0;
+    overflow: hidden;
+    border: 1px solid #7f9db9;
+    border-radius: 3px;
+    background: linear-gradient(#fff, #e4e2d6);
+  }
+  .wmp-progress-fill {
+    position: absolute;
+    inset: 0;
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+    background: linear-gradient(#7fd1ff, #2a8af0 60%, #1a6fd6);
+  }
+  .wmp-controls {
+    display: flex;
+    gap: 6px;
+    padding: 7px 8px 8px;
+  }
+  .wmp-btn {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 8px;
+    border: 1px solid var(--xp-btn-edge);
+    border-radius: 3px;
+    background: linear-gradient(180deg, #fff, #f1efe6 45%, #dcd8c7);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .wmp-btn svg {
+    width: 10px;
+    height: 10px;
+    flex: none;
+  }
+  .wmp-btn:hover {
+    box-shadow: inset 0 0 0 2px #f5b04a;
+  }
+  .wmp-btn[aria-pressed="true"] {
+    background: linear-gradient(180deg, #d6d2c0, #e8e6da 60%, #f6f5ef);
+    box-shadow: inset 1px 1px 2px rgb(0 0 0 / 0.25);
+  }
+  .wmp-btn:focus-visible {
+    outline: 2px solid var(--xp-focus);
+    outline-offset: 2px;
+  }
+  /* Closed: a desktop icon where the window stood. */
+  .wmp-icon {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 92px;
+    padding: 6px 4px;
+    border: 1px dotted transparent;
+    border-radius: 2px;
+    background: none;
+    color: var(--paper);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .wmp-icon span {
+    padding: 1px 3px;
+    text-shadow: 1px 1px 1px rgb(0 0 0 / 0.6);
+  }
+  .wmp-icon svg {
+    width: 40px;
+    height: 40px;
+    filter: drop-shadow(1px 2px 1px rgb(0 0 0 / 0.3));
+  }
+  .wmp-icon:hover span,
+  .wmp-icon:focus-visible span {
+    background: #0b5bd3;
+  }
+  .wmp-icon:focus-visible {
+    outline: none;
+    border-color: var(--paper);
+  }
+
+  /* ---------- the eye in a cloud ---------- */
+  /* % of its cloud: larger on phones, where the cloud itself is small. */
+  .cloud-eye {
+    position: absolute;
+    width: 30%;
+    translate: -50% -50%;
+    aspect-ratio: 480 / 338;
+  }
+  @media (min-width: 640px) {
+    .cloud-eye {
+      width: 22%;
+    }
+  }
+  .cloud-eye > img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .cloud-eye-open {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    -webkit-mask: var(--opening) 0 0 / 100% 100% no-repeat;
+    mask: var(--opening) 0 0 / 100% 100% no-repeat;
+  }
+  .cloud-eye-iris {
+    position: absolute;
+    left: var(--ix);
+    top: var(--iy);
+    width: var(--iw);
+    max-width: none;
+    height: auto;
+    translate: -50% -50%;
+    will-change: transform;
+  }
+  /* The upper lid's shadow on the eyeball (over the iris too). */
+  .cloud-eye-open::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent var(--lid-top),
+      rgb(90 50 45 / 0.3) var(--lid-top),
+      transparent calc(var(--lid-top) + 14%),
+      transparent calc(var(--lid-bottom) - 8%),
+      rgb(90 50 45 / 0.14) var(--lid-bottom)
+    );
+    pointer-events: none;
+  }
+  /* The blink: the upper lid comes down over the opening and back. Its lower
+     edge (the lash line) is an arc, like a real lid's. */
+  .cloud-eye-lid {
+    position: absolute;
+    left: -2%;
+    right: -2%;
+    top: 0;
+    height: calc(var(--lid-bottom) + 3%);
+    z-index: 2;
+    border-radius: 0 0 50% 50% / 0 0 38% 38%;
+    background: linear-gradient(to bottom, rgb(226 212 210), rgb(212 192 188) 75%, rgb(170 138 132));
+    box-shadow: inset 0 -2px 0 rgb(70 48 42), inset 0 -5px 4px -2px rgb(110 80 74 / 0.6);
+    transform: translateY(var(--lid-shift));
+    visibility: hidden;
+  }
+  .cloud-eye[data-blink] .cloud-eye-lid {
+    visibility: visible;
+    animation: eye-blink 0.24s ease-in-out;
+  }
+  :root:not([data-ready]) .cloud-eye-open {
+    visibility: hidden;
+  }
+}
+
+@keyframes rainbow-breathe {
+  50% {
+    opacity: 0.56;
+  }
+}
+@keyframes ayr-tear-a {
+  0% {
+    transform: translateX(-6px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  100% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes ayr-tear-b {
+  0% {
+    transform: translateX(9px);
+  }
+  50% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(3px);
+  }
+}
+@keyframes ayr-tear-c {
+  0% {
+    transform: translateX(-3px);
+  }
+  50% {
+    transform: translateX(7px);
+  }
+  100% {
+    transform: translateX(-1px);
+  }
+}
+@keyframes wmp-noise {
+  20% {
+    transform: translate(-7%, 4%);
+  }
+  40% {
+    transform: translate(5%, -6%);
+  }
+  60% {
+    transform: translate(-3%, 8%);
+  }
+  80% {
+    transform: translate(8%, 2%);
+  }
+}
+@keyframes eye-blink {
+  45%,
+  55% {
+    transform: translateY(0);
+  }
+}
+
+/* Paused: the rainbow and the tape noise hold still. */
+:root[data-motion="still"] :is(.ayr-rainbow, .wmp-noise),
+[data-offscreen="true"] :is(.ayr-rainbow, .wmp-noise) {
+  animation-play-state: paused !important;
+}
+:root[data-motion="still"] .wmp-slide {
+  transition: none;
+}

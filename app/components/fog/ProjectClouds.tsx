@@ -83,7 +83,19 @@ export function ProjectClouds({ projects }: { projects: Project[] }) {
                 className="absolute w-[66%] -translate-x-1/2 -translate-y-1/2 text-center"
                 style={{ left: `${cloud.text.x}%`, top: `${cloud.text.y}%` }}
               >
-                <span className="cloud-name text-glow text-display block text-[7cqw] leading-none">
+                <span className="cloud-name text-glow text-display flex items-center justify-center gap-[1.6cqw] text-[7cqw] leading-none">
+                  {project.logo && (
+                    // eslint-disable-next-line @next/next/no-img-element -- tiny pre-sized WebP
+                    <img
+                      src={project.logo}
+                      alt=""
+                      width={128}
+                      height={128}
+                      loading="lazy"
+                      decoding="async"
+                      className="cloud-logo h-[1.15em] w-[1.15em] flex-none rounded-[0.22em]"
+                    />
+                  )}
                   {project.name}
                 </span>
                 <span className="text-glow mt-[1.6cqw] block text-[3.9cqw] font-medium leading-[1.3]">

@@ -71,3 +71,30 @@ export const fogNozzle = { x: 0.975, y: 0.37 };
 // Bubbles: the mouth of the machine — the open front between the tray lip and
 // the lid, where the wand wheels turn (bubble-machine-2: ~ (415, 160) of 900 × 795).
 export const bubbleNozzle = { x: 0.46, y: 0.2, angle: -100 };
+
+/**
+ * The eye in a sky cloud (generate-eye.mjs → process-media eye): the white with
+ * its lids (skin feathered into cloud), the opening between the lids as a mask
+ * (it clips the iris and the blink), and the iris on its own.
+ */
+export const eye = {
+  white: { src: "/media/eye-white.webp", width: 480, height: 338 } as Photo,
+  opening: "/media/eye-opening.webp",
+  iris: { src: "/media/eye-iris.webp", width: 196, height: 200 } as Photo,
+  /** The opening, % of the eye box (measured by process-media eye). */
+  box: { left: 32.9, top: 29.2, width: 37, height: 37.4 },
+};
+
+/**
+ * projects.wmv: the reel, 16:10 frames (process-media wmp). It opens on the UKOL
+ * logo as a title card, then UKOL's own app screens, then the public pages.
+ */
+export const wmpSlides: { src: string; project: number; label: string }[] = [
+  { src: "/media/wmp/ukol-title.webp", project: 0, label: "UKOL — logo" },
+  { src: "/media/wmp/ukol-app-dictate.webp", project: 0, label: "UKOL app — dictate the job" },
+  { src: "/media/wmp/ukol-app-quote.webp", project: 0, label: "UKOL app — the quote, ready to send" },
+  { src: "/media/wmp/ukol-app-prices.webp", project: 0, label: "UKOL app — the price list" },
+  { src: "/media/wmp/ukol-home.webp", project: 0, label: "UKOL — home page" },
+  { src: "/media/wmp/dokli-home.webp", project: 1, label: "DokliCZ — letter upload" },
+  { src: "/media/wmp/chat-widget.webp", project: 2, label: "AI Chat Widget — demo chat" },
+];
