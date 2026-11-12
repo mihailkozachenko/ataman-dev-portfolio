@@ -19,23 +19,24 @@ type Layer = {
   desktopOnly?: boolean;
 };
 
-// Three depths: far (small, faint, soft) · mid · near (big, crisp, at the edges
-// so they never sit under body text).
+// Three depths: far (small, faint, soft) · mid · near (big, crisp). Placed in
+// the side gutters and in the gaps between blocks only — never behind a title,
+// text, a project cloud or one of the "rendering errors" (checked at 1440 and 390).
+// Every layer lies fully inside the page width (left ≥ 0, left + vw ≤ 100), so
+// no cloud is ever cut by the edge of the screen.
 const LAYERS: Layer[] = [
   // far
-  { kind: "cloud-2", top: 3, left: 58, vw: 12, max: 200, depth: 0.32, opacity: 0.5, blur: 1.5, desktopOnly: true },
-  { kind: "cloud-1", top: 15, left: 8, vw: 10, max: 170, depth: 0.32, opacity: 0.45, blur: 1.5, desktopOnly: true },
-  { kind: "anim", top: 33, left: 70, vw: 14, max: 220, depth: 0.3, opacity: 0.55, blur: 1, desktopOnly: true },
-  { kind: "cloud-2", top: 52, left: 40, vw: 11, max: 180, depth: 0.32, opacity: 0.45, blur: 1.5, desktopOnly: true },
-  { kind: "cloud-1", top: 70, left: 80, vw: 12, max: 190, depth: 0.3, opacity: 0.5, blur: 1.5, desktopOnly: true },
+  { kind: "cloud-2", top: 0.8, left: 46, vw: 12, max: 200, depth: 0.32, opacity: 0.5, blur: 1.5, desktopOnly: true },
+  { kind: "anim", top: 19, left: 40, vw: 14, max: 220, depth: 0.3, opacity: 0.55, blur: 1, desktopOnly: true },
+  { kind: "cloud-1", top: 36, left: 88, vw: 10, max: 170, depth: 0.32, opacity: 0.45, blur: 1.5, desktopOnly: true },
+  { kind: "cloud-2", top: 44, left: 1, vw: 11, max: 180, depth: 0.32, opacity: 0.45, blur: 1.5, desktopOnly: true },
   // mid
-  { kind: "cloud-1", top: 9, left: 72, vw: 26, max: 420, depth: 0.16, opacity: 0.85 },
-  { kind: "anim", top: 24, left: -6, vw: 24, max: 360, depth: 0.15, opacity: 0.8 },
-  { kind: "cloud-2", top: 44, left: 78, vw: 24, max: 380, depth: 0.16, opacity: 0.8, flip: true },
-  { kind: "cloud-1", top: 62, left: -4, vw: 22, max: 340, depth: 0.15, opacity: 0.8 },
+  { kind: "cloud-2", top: 44, left: 76, vw: 22, max: 380, depth: 0.16, opacity: 0.8, flip: true, desktopOnly: true },
+  // A real cloud right above the green-lit one.
+  { kind: "cloud-1", top: 53.6, left: 76, vw: 22, max: 340, depth: 0.15, opacity: 0.85, desktopOnly: true },
   // near
-  { kind: "cloud-2", top: 18, left: 82, vw: 40, max: 620, depth: 0.05, opacity: 0.95 },
-  { kind: "cloud-1", top: 56, left: -14, vw: 40, max: 600, depth: 0.05, opacity: 0.95, flip: true },
+  { kind: "cloud-2", top: 19, left: 58, vw: 40, max: 620, depth: 0.05, opacity: 0.95 },
+  { kind: "cloud-1", top: 68, left: 0, vw: 24, max: 360, depth: 0.05, opacity: 0.95, flip: true, desktopOnly: true },
 ];
 
 /** Decorative cloud layers spread over the whole page. */
@@ -55,7 +56,9 @@ export function SkyDecor() {
         return (
           <div key={i} data-depth={layer.depth} className={className} style={style}>
             {layer.kind === "anim" ? (
-              <div data-anim-scope>
+              // The animation's clouds drift across a fixed 400 px frame and would be
+              // cut by its edges: the frame edges fade out instead.
+              <div data-anim-scope className="anim-feather">
                 <AnimatedImage anim={cloudAnim} className="h-auto w-full" />
               </div>
             ) : (

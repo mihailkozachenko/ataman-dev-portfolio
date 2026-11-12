@@ -1,6 +1,5 @@
 import { BubbleSection } from "./components/bubbles/BubbleSection";
 import { BubbleCursor } from "./components/experience/BubbleCursor";
-import { SmoothScroll } from "./components/experience/SmoothScroll";
 import { FogSection } from "./components/fog/FogSection";
 import { Footer } from "./components/Footer";
 import { Hero } from "./components/Hero";
@@ -13,7 +12,7 @@ export default function Home() {
     <>
       <a
         href="#main"
-        className="plaque plaque-lime sr-only text-sm focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
+        className="xp-btn sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50"
       >
         Skip to content
       </a>
@@ -31,7 +30,6 @@ export default function Home() {
         </div>
       </div>
       <MotionDirector />
-      <SmoothScroll />
       <BubbleCursor />
       {/* Static film grain over the whole page. */}
       <div aria-hidden="true" className="film-grain" />

@@ -10,11 +10,45 @@
   --sky-4: #c2e2fa;
   --ink: #0a0a0a;
   --ink-soft: #0d2440;
-  --plaque-red: #d70600;
-  --plaque-lime: #b8ff2e;
   --paper: #ffffff;
+  /* The two "rendering errors" of the page, and nothing else in their colours:
+     the transparent-PNG checkerboard and the #00FF00 chroma key. */
   --checker-a: #ffffff;
-  --checker-b: #cdcdcd;
+  --checker-b: #cccccc;
+  --checker-frame: #8f8f8f;
+  --chroma: #00ff00;
+
+  /* Controls and windows: one old-desktop system (.xp-*). Photos get one soft
+     "object" shadow. */
+  --shadow-object: 0 14px 18px rgb(5 25 80 / 0.24);
+
+  /* Type scale (Archivo: 800 display, 700 UI, 500 text). */
+  --step-hero: clamp(4.5rem, 19vw, 11.5rem);
+  --step-h2: clamp(3rem, 10.5vw, 7.25rem);
+  --step-h3: clamp(1.75rem, 3.6vw, 2.5rem);
+  --step-lead: clamp(1.125rem, 1.5vw, 1.375rem);
+  --step-ui: 1rem;
+  --step-small: 0.875rem;
+
+  /* The old-desktop error window (hero). */
+  --xp-title-a: #0a5fdc;
+  --xp-title-b: #3d8ff5;
+  --xp-title-c: #0548c4;
+  --xp-face: #ece9d8;
+  --xp-edge: #0831d9;
+  --xp-close: #e0583c;
+  --xp-error: #d4202a;
+  --font-xp: Tahoma, Verdana, "Segoe UI", sans-serif;
+  /* XP-era controls. */
+  --xp-go: #237823; /* white text on it: 5.5:1 */
+  --xp-go-deep: #1d6a1d; /* 6.6:1 */
+  --xp-go-edge: #144d14;
+  --xp-btn-edge: #003c74;
+  --xp-focus: #0b2a8a;
+  --xp-focus-in: #3b7cf0;
+
+  /* Vertical rhythm. */
+  --section-gap: clamp(6rem, 12vw, 10rem);
 
   /* One easing for every UI transition. */
   --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
@@ -22,13 +56,18 @@
   /* One engine cycle: a puff of smoke and a kick of the machine. */
   --puff: 4.2s;
 }
+/* From lg the hero title shares its row with the missing portrait (9 + 3 columns). */
+@media (min-width: 1024px) {
+  :root {
+    --step-hero: clamp(7rem, 12.6vw, 11.5rem);
+  }
+}
 
 @theme inline {
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --color-plaque-red: var(--plaque-red);
-  --color-plaque-lime: var(--plaque-lime);
   --color-paper: var(--paper);
+  --color-chroma: var(--chroma);
 
   --font-sans: var(--font-archivo), "Helvetica Neue", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
@@ -38,14 +77,9 @@ html {
   background-color: var(--sky-4);
   scroll-behavior: smooth;
 }
-/* Lenis drives scrolling itself; native smooth scrolling would fight it. */
-html.lenis,
-html.lenis body {
-  height: auto;
-  scroll-behavior: auto;
-}
-.lenis.lenis-stopped {
-  overflow: clip;
+html,
+body {
+  overflow-x: clip;
 }
 /* Custom bubble cursor (fine pointers, motion allowed). */
 html.bubble-cursor,
@@ -69,12 +103,12 @@ body {
 }
 
 ::selection {
-  background: var(--plaque-lime);
+  background: var(--chroma);
   color: var(--ink);
 }
 
 /* Two-tone ring: white halo hugging the element, then a black outline —
-   visible on deep blue, pale sky, photos and plaques alike. */
+   visible on deep blue, pale sky and photos alike. */
 :focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
@@ -82,15 +116,31 @@ body {
 }
 
 @layer components {
-  /* Display headings: one style for every big title — heavy Archivo, tight tracking. */
+  /* Display headings: one style for every big title — heavy Archivo, tight tracking.
+     Only display heads are set in capitals; everything else is sentence case. */
   .text-display {
     font-weight: 800;
     text-transform: uppercase;
     line-height: 0.86;
     letter-spacing: -0.05em;
   }
+  /* A display head that may wrap onto a second line needs room for the caps. */
+  .text-display-wrap {
+    line-height: 0.95;
+  }
+  /* Supporting text set straight on the sky: one size, one weight. */
+  .lead {
+    font-size: var(--step-lead);
+    font-weight: 500;
+    line-height: 1.4;
+    max-width: 34ch;
+  }
+  /* No single orphaned word at the end of a paragraph. */
+  p {
+    text-wrap: pretty;
+  }
 
-  /* "Transparent PNG" checkerboard peeking through the sky. */
+  /* "Transparent PNG" checkerboard: crisp 8px squares, as in an image editor. */
   .checker {
     background-color: var(--checker-a);
     background-image: conic-gradient(
@@ -99,63 +149,222 @@ body {
       var(--checker-b) 0 75%,
       transparent 0
     );
-    background-size: 24px 24px;
+    background-size: 16px 16px;
+  }
+  /* The browser's own broken-image box: a 1px grey frame, nothing else. */
+  .broken-frame {
+    outline: 1px solid var(--checker-frame);
+    outline-offset: -1px;
   }
 
-  .plaque {
+  /* ---------- controls: one old-desktop (XP-era) system ----------
+     .xp-cta  — the primary action: a glossy green pill like that era's start
+                button, bold white text with a slight shadow, an icon.
+     .xp-btn  — everything else: the classic light dialog button with a thin
+                dark-blue frame (orange hover rim, blue focus contour).
+     Both: real <a>/<button>, ≥ 44 px tall, text ≥ 4.5:1 on every part of the
+     face it can sit on, a click sound (sound.ts, when Sound is on). */
+  .xp-cta,
+  .xp-btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 0.5em;
-    min-height: 44px;
-    padding: 0.55em 0.9em;
-    border: 2px solid var(--ink);
-    box-shadow: 4px 4px 0 var(--ink);
-    color: var(--ink);
+    justify-content: center;
+    gap: 0.6em;
+    min-height: 48px;
+    font-family: var(--font-xp);
+    font-size: var(--step-ui);
     font-weight: 700;
     line-height: 1;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
     text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
     transition:
-      transform 0.22s var(--ease-ui),
-      box-shadow 0.22s var(--ease-ui),
-      background-color 0.22s var(--ease-ui);
+      box-shadow 0.15s var(--ease-ui),
+      filter 0.15s var(--ease-ui),
+      translate 0.08s var(--ease-ui);
   }
-  .plaque-tag {
-    min-height: 0;
-    padding: 0.45em 0.7em;
-    box-shadow: none;
-  }
-  .plaque-red {
-    background: var(--plaque-red);
-    color: var(--paper);
-  }
-  .plaque-lime {
-    background: var(--plaque-lime);
-  }
-  .plaque-white {
-    background: var(--paper);
-  }
-  .plaque-ink {
-    background: var(--ink);
-    color: var(--paper);
-  }
-  a.plaque:hover,
-  button.plaque:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0 var(--ink);
-  }
-  a.plaque:active,
-  button.plaque:active {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--ink);
+  .xp-cta svg,
+  .xp-btn svg {
+    flex: none;
   }
 
-  /* Pixel "window" label behind body copy so it reads on any part of the sky. */
+  /* Primary. The face is darkest exactly where the text sits (≥ 5:1 for white);
+     the gloss lives above the cap line. */
+  .xp-cta {
+    padding: 0 1.5rem 0 1.15rem;
+    border: 1px solid var(--xp-go-edge);
+    border-radius: 999px;
+    background: linear-gradient(
+      180deg,
+      #58c458 0%,
+      #2f952f 16%,
+      var(--xp-go) 34%,
+      var(--xp-go-deep) 70%,
+      #217121 88%,
+      #3b9a3b 100%
+    );
+    color: var(--paper);
+    text-shadow: 1px 1px 1px rgb(0 0 0 / 0.45);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      inset 0 -2px 3px rgb(0 0 0 / 0.25),
+      0 2px 0 var(--xp-go-edge),
+      0 6px 14px rgb(5 25 80 / 0.3);
+  }
+  /* Gloss: a soft white band over the top third. */
+  .xp-cta::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 12px;
+    right: 12px;
+    height: 32%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.04));
+    pointer-events: none;
+  }
+  .xp-cta svg {
+    width: 1.3em;
+    height: 1.3em;
+    filter: drop-shadow(1px 1px 0 rgb(0 0 0 / 0.35));
+  }
+  .xp-cta:hover {
+    /* Lit from within: brighter rim, a green halo; the text band stays dark. */
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.5),
+      inset 0 0 10px rgb(170 255 150 / 0.45),
+      inset 0 -2px 3px rgb(0 0 0 / 0.2),
+      0 2px 0 var(--xp-go-edge),
+      0 0 0 3px rgb(150 240 130 / 0.45),
+      0 6px 16px rgb(5 25 80 / 0.35);
+  }
+  .xp-cta:active {
+    translate: 0 2px;
+    filter: brightness(0.92);
+    box-shadow:
+      inset 0 3px 6px rgb(0 0 0 / 0.45),
+      inset 0 -1px 0 rgb(255 255 255 / 0.15),
+      0 0 0 var(--xp-go-edge),
+      0 2px 6px rgb(5 25 80 / 0.25);
+  }
+  .xp-cta:active::before {
+    opacity: 0.45;
+  }
+  /* The big pair in the contact window. */
+  .xp-cta-lg {
+    min-height: 60px;
+    padding: 0 1.75rem 0 1.4rem;
+    font-size: 1.125rem;
+  }
+
+  /* Secondary: the dialog button. */
+  .xp-btn {
+    padding: 0 1.25rem;
+    border: 1px solid var(--xp-btn-edge);
+    border-radius: 4px;
+    background: linear-gradient(180deg, #ffffff 0%, #f7f6f1 45%, #eceae2 85%, #d9d5c6 100%);
+    color: var(--ink);
+    box-shadow:
+      inset 1px 1px 0 #fff,
+      inset -1px -1px 0 rgb(0 0 0 / 0.08),
+      0 3px 8px rgb(5 25 80 / 0.25);
+  }
+  .xp-btn:hover {
+    /* That era's hover: a warm orange rim inside the frame. */
+    box-shadow:
+      inset 0 2px 0 #fde09a,
+      inset 0 -2px 0 #e9a52a,
+      inset 2px 0 0 #fbcf6f,
+      inset -2px 0 0 #fbcf6f,
+      0 3px 8px rgb(5 25 80 / 0.25);
+  }
+  .xp-btn:active {
+    translate: 0 1px;
+    background: linear-gradient(180deg, #e3e1d8 0%, #eeece5 60%, #f5f4ef 100%);
+    box-shadow:
+      inset 1px 1px 3px rgb(0 0 0 / 0.3),
+      0 1px 3px rgb(5 25 80 / 0.2);
+  }
+  .xp-btn-sm {
+    min-height: 44px;
+    padding: 0 1rem;
+    font-size: var(--step-small);
+  }
+  .xp-btn-icon {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  /* A switch the system has turned off (reduced motion): not a control. */
+  .xp-btn-off {
+    color: #5f5d55;
+    background: #ece9d8;
+    box-shadow: none;
+  }
+
+  /* Focus: a blue contour inside the frame (the era's own cue) plus a two-tone
+     ring outside it — white then deep blue — that shows on the darkest and the
+     palest sky alike. */
+  .xp-cta:focus-visible,
+  .xp-btn:focus-visible {
+    outline: 2px solid var(--xp-focus);
+    outline-offset: 3px;
+  }
+  .xp-btn:focus-visible {
+    box-shadow:
+      inset 0 0 0 2px var(--xp-focus-in),
+      0 0 0 3px var(--paper);
+  }
+  .xp-cta:focus-visible {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      inset 0 -2px 3px rgb(0 0 0 / 0.25),
+      0 0 0 3px var(--paper);
+  }
+  @media (forced-colors: active) {
+    .xp-cta,
+    .xp-btn {
+      border: 2px solid ButtonText;
+    }
+    .xp-cta::before {
+      display: none;
+    }
+  }
+
+  /* Plain text links on the sky (nav). */
+  .text-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: var(--step-ui);
+    font-weight: 700;
+    color: var(--paper);
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
+    transition: text-decoration-color 0.18s var(--ease-ui);
+  }
+  .text-link:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /* White footer text on the photographic grass: a soft dark halo keeps it
+     legible where the blades turn bright. */
+  .footer-on-grass {
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.55), 0 0 12px rgb(0 0 0 / 0.35);
+  }
+
+  /* The opened service: a plain window face of the same old desktop. */
   .label-box {
-    background: var(--paper);
-    border: 2px solid var(--ink);
-    box-shadow: 4px 4px 0 var(--ink);
+    background: var(--xp-face);
+    border: 1px solid var(--xp-edge);
+    border-radius: 7px 7px 4px 4px;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.6),
+      0 12px 28px rgb(5 25 80 / 0.3);
   }
 
   /* Hover / focus lift for clouds and service bubbles. */
@@ -173,8 +382,25 @@ body {
     outline: none;
     box-shadow: none;
   }
+  /* Project clouds stand out of the white smoke mass: lifted to white (the photo's
+     grey underside would read as a smudge) with a soft, light lift shadow. */
+  .cloud-img {
+    filter: brightness(1.22) contrast(1.06) drop-shadow(0 10px 16px rgb(5 25 80 / 0.16));
+  }
+  /* The cloud is the link: its name underlines on hover and focus. */
+  .cloud-name {
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.12em;
+    transition: text-decoration-color 0.18s var(--ease-ui);
+  }
+  .cloud-link:hover .cloud-name,
+  .cloud-link:focus-visible .cloud-name {
+    text-decoration-color: currentColor;
+  }
   .cloud-link:focus-visible .cloud-img {
-    filter: drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff)
+    filter: brightness(1.22) drop-shadow(2px 0 0 #fff) drop-shadow(-2px 0 0 #fff) drop-shadow(0 2px 0 #fff)
       drop-shadow(0 -2px 0 #fff) drop-shadow(3px 0 0 var(--ink)) drop-shadow(-3px 0 0 var(--ink))
       drop-shadow(0 3px 0 var(--ink)) drop-shadow(0 -3px 0 var(--ink));
   }
@@ -201,6 +427,10 @@ body {
     animation: kick var(--puff) cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
     transform-origin: 30% 100%;
   }
+  /* Hovering in the air: a slow up-and-down drift. */
+  .float-bob {
+    animation: float-bob 7s ease-in-out infinite alternate;
+  }
   .smoke-puff {
     animation: puff var(--puff) ease-out infinite;
   }
@@ -225,26 +455,47 @@ body {
     /* A faint shadow so clear bubbles still read on the pale lower sky. */
     filter: drop-shadow(0 3px 5px rgb(13 36 64 / 0.22));
   }
-  .bubble-popping {
-    animation: bubble-pop 0.28s ease-out forwards;
-  }
   .bubble-reform {
     animation: bubble-reform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
   }
+  /* Droplets of a pop (lib/pop.ts): size and flight are set per drop. */
+  .pop-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 65;
+    pointer-events: none;
+  }
   .pop-drop {
     position: absolute;
-    left: 50%;
-    top: 50%;
-    width: 10px;
-    height: 10px;
-    margin: -5px;
+    left: 0;
+    top: 0;
     border-radius: 50%;
     background: rgb(255 255 255 / 0.95);
     box-shadow: 0 0 0 1px rgb(13 36 64 / 0.25);
-    animation: pop-drop 0.42s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
   }
   .panel-in {
     animation: panel-in 0.25s ease-out backwards;
+  }
+  /* Where a bubble was popped: a zero-size anchor for its droplets. */
+  .pop-splash {
+    position: absolute;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+  /* A content layer that lets clicks fall through to the decorative bubbles
+     flying underneath it; only the real controls (and the loose letter, and an
+     opened service panel) take the pointer. */
+  .click-through,
+  .click-through * {
+    pointer-events: none;
+  }
+  .click-through :is(a, button, [role="button"], .hang-spin, .label-box, .label-box *, .xp-window, .xp-window *) {
+    pointer-events: auto;
+  }
+  /* Decorative bubbles can be popped: the bubble cursor swells over them. */
+  [data-poppable] {
+    cursor: pointer;
   }
 
   /* Behind the hill: the page sky eases into the horizon colour of the field
@@ -276,37 +527,520 @@ body {
       translate: -50% 50%;
     }
   }
+  /* ---------- header: the rotary phone (Contact) ---------- */
+  .phone-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 52px;
+    border-radius: 10px;
+  }
+  .phone-body {
+    position: relative;
+    display: block;
+    width: 60px;
+    filter: drop-shadow(0 4px 5px rgb(5 25 80 / 0.35));
+  }
+  .phone-body img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* Two layers of one image, split under the handset (top 32 %). */
+  .phone-base {
+    clip-path: inset(32% 0 0 0);
+  }
+  .phone-handset {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 0 68% 0);
+    transform-origin: 50% 30%;
+  }
+  .phone-link:hover .phone-body {
+    animation: phone-hop 0.5s var(--ease-ui);
+  }
+  .phone-link:hover .phone-handset,
+  .phone-link:focus-visible .phone-handset {
+    animation: handset-tremble 0.11s linear infinite;
+  }
+  .phone-link[data-ringing] .phone-body {
+    animation: phone-shake 0.08s linear infinite;
+  }
+  .phone-link[data-ringing] .phone-handset {
+    animation: handset-jump 0.09s linear infinite;
+  }
+
+  /* ---------- the door on the hill (FieldDoor) ----------
+     A white door standing in the field, open onto another world. Placed in
+     the hill's own units (.door-field is a size container): its centre at
+     x % of the width, its foot at base % of the height. Back to front: shade
+     on the ground → the portal (the far world, behind the opening) → the
+     casing → the leaf, swung out towards the viewer about its left hinge
+     (--door-a; past 90° it lies left of the opening) → blades of grass over
+     the foot. */
+  .door-field {
+    container-type: size;
+  }
+  .field-door {
+    --dh: 112px;
+    --dw: calc(var(--dh) * var(--aspect));
+    --x: var(--x-sm);
+    --base: var(--base-sm);
+    --door-a: var(--ajar);
+    --gh: 12px;
+    position: absolute;
+    z-index: 2;
+    left: calc(var(--x) * 1cqw - var(--dw) / 2);
+    top: calc(var(--base) * 1cqh - var(--dh));
+    width: var(--dw);
+    height: var(--dh);
+    transition: --door-a 0.6s var(--ease-ui);
+  }
+  @media (min-width: 640px) {
+    .field-door {
+      --dh: clamp(150px, 12.5vw, 200px);
+      --x: var(--x-lg);
+      --base: var(--base-lg);
+      --gh: 15px;
+    }
+  }
+  .field-door:has(.door-body:hover),
+  .field-door:has(.door-body:focus-visible) {
+    --door-a: var(--wider);
+  }
+  .field-door[data-open] {
+    --door-a: var(--open);
+    transition-duration: 0.75s;
+    transition-timing-function: cubic-bezier(0.3, 0.05, 0.2, 1);
+  }
+  .door-body {
+    position: absolute;
+    inset: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    /* Eye level a little below the head of the door, near the horizon. */
+    perspective: calc(var(--dh) * 3.2);
+    perspective-origin: 50% 70%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .door-portal {
+    position: absolute;
+    overflow: hidden;
+    background: #7fb4ef;
+  }
+  /* The far world, a little larger than the opening so it can drift. */
+  .door-portal-img,
+  .door-zoom img {
+    position: absolute;
+    left: -14%;
+    top: -6%;
+    width: 128%;
+    max-width: none;
+    height: 112%;
+    object-fit: cover;
+    object-position: 28% 50%;
+  }
+  /* The casing's thin shadow inside the opening (light from above-left). */
+  .door-portal::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow:
+      inset 4px 3px 5px -2px rgb(0 0 0 / 0.35),
+      inset -2px 0 3px -1px rgb(0 0 0 / 0.12);
+    pointer-events: none;
+  }
+  .door-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .door-leaf {
+    position: absolute;
+    transform-origin: 0 50%;
+    transform: rotateY(calc(var(--door-a) * -1));
+    /* Its far side, turned to us, catches a little less light. */
+    filter: brightness(0.94);
+  }
+  .door-leaf img {
+    display: block;
+  }
+  /* Contact shade on the grass: under the threshold, and under the leaf's foot
+     (as long as the leaf's footprint: the opening's width × −cos of its angle). */
+  .door-shade {
+    position: absolute;
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgb(8 32 4 / 0.5), rgb(8 32 4 / 0.18) 60%, transparent);
+  }
+  .door-shade-sill {
+    left: 2%;
+    right: 2%;
+    top: calc(100% - 4px);
+    height: 9px;
+  }
+  .door-shade-leaf {
+    --foot: calc(var(--dw) * var(--o-width) * -1 * cos(var(--door-a)) * 1.08);
+    left: calc(var(--o-left) - var(--foot));
+    width: calc(var(--foot) + 6px);
+    top: calc(100% - 3px);
+    height: calc(var(--dh) * 0.07);
+  }
+  /* A strip of the hill photo itself, aligned pixel for pixel with it (same
+     object-cover maths), cut along the top into blades: the door's foot sinks
+     into the grass. */
+  .door-grass {
+    --rw: max(100cqw, 100cqh * var(--grass-k));
+    --gl: calc(var(--dw) * -0.85);
+    position: absolute;
+    left: var(--gl);
+    width: calc(var(--dw) * 2.1);
+    top: calc(100% - var(--gh) * 0.55);
+    height: var(--gh);
+    pointer-events: none;
+    background-image: var(--grass-src);
+    background-repeat: no-repeat;
+    background-size: var(--rw) auto;
+    background-position:
+      calc(50cqw - var(--rw) / 2 - (var(--x) * 1cqw - var(--dw) / 2 + var(--gl)))
+      calc((var(--base) * 1cqh - var(--gh) * 0.55) * -1);
+    -webkit-mask:
+      var(--blades) repeat-x 0 100% / 24px 100%,
+      linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+    -webkit-mask-composite: source-in;
+    mask:
+      var(--blades) repeat-x 0 100% / 24px 100%,
+      linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
+    mask-composite: intersect;
+  }
+  /* Until the hill photo itself is in, there is nothing to match. */
+  :root:not([data-ready]) .door-grass {
+    visibility: hidden;
+  }
+  /* Focus: a two-tone line round the door's own outline (casing and leaf). */
+  .door-body:focus-visible {
+    outline: none;
+    box-shadow: none;
+    filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff) drop-shadow(0 1.5px 0 #fff)
+      drop-shadow(0 -1.5px 0 #fff) drop-shadow(2px 0 0 var(--ink)) drop-shadow(-2px 0 0 var(--ink))
+      drop-shadow(0 2px 0 var(--ink)) drop-shadow(0 -2px 0 var(--ink));
+  }
+  @media (forced-colors: active) {
+    .door-body:focus-visible {
+      outline: 3px solid CanvasText;
+    }
+  }
+  /* Stepping through: the portal laid over the page (created on click). */
+  .door-zoom {
+    position: fixed;
+    z-index: 75;
+    overflow: hidden;
+    pointer-events: none;
+    background: #7fb4ef;
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+  /* The contact window's title bar blinks like a new message (that era's
+     orange flash), twice; motion off: it just lights up once. */
+  .xp-window-lg .xp-bar {
+    position: relative;
+    isolation: isolate;
+  }
+  .xp-window-lg .xp-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.4), rgb(255 255 255 / 0.05) 35%, transparent 55%),
+      linear-gradient(180deg, #ffb340, #f08a00 55%, #c96a00);
+    opacity: 0;
+    transition: opacity 0.25s var(--ease-ui);
+  }
+  .xp-window-lg[data-new-message="blink"] .xp-bar::after {
+    animation: xp-new-message 0.5s ease-in-out 2;
+  }
+  .xp-window-lg[data-new-message="still"] .xp-bar::after {
+    opacity: 1;
+  }
+
+  /* The word flying from the menu to its section heading. */
+  .fly-word {
+    position: fixed;
+    z-index: 60;
+    margin: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  /* ---------- hero: the error window ---------- */
+  .xp-window {
+    position: relative;
+    z-index: 5;
+    width: 300px;
+    border: 1px solid var(--xp-edge);
+    border-radius: 7px 7px 3px 3px;
+    background: var(--xp-face);
+    box-shadow: 0 12px 28px rgb(5 25 80 / 0.35);
+    font-family: var(--font-xp);
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .xp-title,
+  .xp-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 30px;
+    padding: 0 4px 0 9px;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--xp-title-b), var(--xp-title-a) 45%, var(--xp-title-c));
+    color: var(--paper);
+    font-weight: 700;
+    user-select: none;
+  }
+  .xp-title {
+    cursor: grab;
+    touch-action: none;
+  }
+  .xp-title:active {
+    cursor: grabbing;
+  }
+  .xp-title-text {
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.35);
+  }
+  .xp-close {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--paper);
+    border-radius: 3px;
+    background: var(--xp-close);
+    color: var(--paper);
+  }
+  .xp-close svg {
+    width: 10px;
+    height: 10px;
+  }
+  .xp-body {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 16px 8px;
+  }
+  .xp-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--xp-error), white 35%), var(--xp-error) 60%);
+    color: var(--paper);
+  }
+  .xp-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  .xp-text {
+    margin: 0;
+    line-height: 1.35;
+  }
+  .xp-actions {
+    display: flex;
+    justify-content: center;
+    padding: 6px 0 14px;
+  }
+  .xp-title:focus-visible,
+  .xp-close:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 1px;
+  }
+
+  /* ---------- the contact window (new_message.exe) ---------- */
+  .xp-window-lg {
+    width: 100%;
+    max-width: 38rem;
+    border-width: 2px;
+    border-radius: 9px 9px 4px 4px;
+    font-size: var(--step-ui);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.5),
+      0 18px 40px rgb(5 25 80 / 0.32);
+  }
+  /* Glossy blue caption: a highlight along its top, a darker foot. */
+  .xp-window-lg .xp-bar {
+    height: 36px;
+    padding: 0 6px 0 12px;
+    border-radius: 7px 7px 0 0;
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.38), rgb(255 255 255 / 0.06) 32%, transparent 52%),
+      linear-gradient(180deg, #3d95ff 0%, #0a64f0 18%, #0058e6 55%, #0050d8 85%, #0a3fb0 100%);
+    font-size: 15px;
+  }
+  .xp-bar-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    text-shadow: 1px 1px 0 rgb(0 0 0 / 0.4);
+  }
+  .xp-bar-title svg {
+    width: 18px;
+    height: 18px;
+  }
+  /* Minimise / close: drawn only (aria-hidden), never controls. */
+  .xp-caps {
+    display: flex;
+    gap: 3px;
+  }
+  .xp-cap {
+    display: grid;
+    place-items: center;
+    width: 23px;
+    height: 23px;
+    border: 1px solid var(--paper);
+    border-radius: 3px;
+    background: radial-gradient(circle at 30% 25%, #6aa8ff, #1d63e8 60%, #1650c8);
+    color: var(--paper);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+  .xp-cap-close {
+    background: radial-gradient(circle at 30% 25%, #f2a18a, var(--xp-close) 60%, #c2401f);
+  }
+  .xp-cap svg {
+    width: 11px;
+    height: 11px;
+  }
+  .xp-window-body {
+    padding: clamp(1.25rem, 4vw, 2rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 4vw, 2.25rem);
+  }
+
+  /* ---------- hero: a lone bubble crossing the sky ---------- */
+  .drift-across {
+    animation: drift-across 70s linear 3s infinite backwards;
+  }
+  .drift-bob {
+    animation: billow 5s ease-in-out infinite alternate;
+  }
+  /* An invisible margin around the moving bubble, so it is easy to hit. */
+  .drift-hit::before {
+    content: "";
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+  }
+
+  /* Animated cloud frames: fade every edge so a drifting cloud never shows a cut. */
+  .anim-feather {
+    -webkit-mask:
+      linear-gradient(to right, transparent, #000 18%, #000 82%, transparent),
+      linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    -webkit-mask-composite: source-in;
+    mask:
+      linear-gradient(to right, transparent, #000 18%, #000 82%, transparent),
+      linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent);
+    mask-composite: intersect;
+  }
+  /* The smoke mass fades in once its sprites are ready. */
+  .smoke-mass {
+    opacity: 0;
+    transition: opacity 1.2s var(--ease-ui);
+  }
+  .smoke-mass[data-on] {
+    opacity: 1;
+  }
   /* Slow volumetric swell of the soft far smoke. */
   .billow {
     animation: billow 13s ease-in-out infinite alternate;
   }
 
-  /* ---------- collage ---------- */
-  .broken-frame {
-    outline: 1px solid #8f8f8f;
-    outline-offset: -1px;
-    box-shadow: 0 0 0 3px rgb(255 255 255 / 0.55);
-  }
-  /* A cloud that "failed to render": flat chroma key in the cloud's exact shape. */
-  .chroma-cloud {
-    background: transparent;
-  }
-  /* The mask image is fetched only once the page is idle. */
-  :root[data-ready] .chroma-cloud {
-    background: #00ff00;
-    -webkit-mask: var(--cloud-mask) center / contain no-repeat;
-    mask: var(--cloud-mask) center / contain no-repeat;
-  }
-  /* A piece of the deep top sky pasted onto the pale lower sky. */
-  .sky-patch {
-    background: linear-gradient(180deg, var(--sky-0), var(--sky-1));
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.7), 0 10px 24px rgb(5 25 80 / 0.25);
-  }
+  /* ---------- rendering errors ---------- */
   .collage-drift {
     animation: collage-drift 40s ease-in-out infinite alternate;
   }
 }
 
+@property --door-a {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 128deg;
+}
+@keyframes xp-new-message {
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes phone-hop {
+  30% {
+    transform: translateY(-6px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  70% {
+    transform: translateY(-2px);
+  }
+}
+@keyframes handset-tremble {
+  0%,
+  100% {
+    transform: rotate(0) translateY(0);
+  }
+  25% {
+    transform: rotate(-1.5deg) translateY(-1px);
+  }
+  75% {
+    transform: rotate(1.5deg) translateY(-1px);
+  }
+}
+@keyframes phone-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+@keyframes handset-jump {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+/* Right edge of the screen → off the left edge; the element rests at left: 0. */
+@keyframes drift-across {
+  from {
+    transform: translateX(calc(100vw + 40px)) translateY(0);
+  }
+  50% {
+    transform: translateX(calc(50vw - 30px)) translateY(-26px);
+  }
+  to {
+    transform: translateX(-120px) translateY(6px);
+  }
+}
+@keyframes float-bob {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: translateY(-10px);
+  }
+}
 /* Motor hum: 1–2 px jitter. */
 @keyframes hum {
   0% {
@@ -398,16 +1132,6 @@ body {
     opacity: 0;
   }
 }
-@keyframes pop-drop {
-  from {
-    transform: rotate(var(--a)) translateY(0) scale(1);
-    opacity: 1;
-  }
-  to {
-    transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) scale(0.2);
-    opacity: 0;
-  }
-}
 @keyframes panel-in {
   from {
     transform: scale(0.85);
@@ -418,16 +1142,6 @@ body {
 
 /* ================= experience layer ================= */
 @layer components {
-  /* Header toggles share one footprint, so swapping labels never shifts the bar. */
-  .toggle-plaque {
-    justify-content: center;
-    min-width: 44px;
-  }
-  @media (min-width: 640px) {
-    .toggle-plaque {
-      width: 9.5rem;
-    }
-  }
 
   /* Static film grain over everything. */
   .film-grain {
@@ -457,7 +1171,7 @@ body {
     opacity: 1;
   }
   .bubble-cursor-el[data-pop="true"] img {
-    animation: bubble-pop 0.3s ease-out forwards;
+    animation: bubble-pop 0.09s ease-out forwards;
   }
   .bubble-cursor-drops {
     position: absolute;
@@ -475,7 +1189,7 @@ body {
     opacity: 0;
   }
   .bubble-cursor-el[data-pop="true"] .bubble-cursor-drops > span {
-    animation: cursor-drop 0.32s ease-out forwards;
+    animation: cursor-drop 0.22s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
   }
 
   /* ---------- letters ---------- */
@@ -496,7 +1210,7 @@ body {
   .hang-chroma {
     position: absolute;
     inset: 0;
-    color: #00ff00;
+    color: var(--chroma);
     opacity: 0;
   }
   .hang-slot.is-empty .hang-chroma {
@@ -550,16 +1264,21 @@ body {
   }
   /* Grass blades over the letter's lower edge: a strip of the hill photo with a
      ragged top. */
+  /* Same scale as the hill photo (cover over the viewport width), and faded out
+     on every side so it never reads as a patch laid on the grass. */
   .hang-ground::before {
     content: "";
     position: absolute;
-    inset: -20% -6% 0;
-    background: var(--grass) 30% 62% / 900px auto;
-    -webkit-mask: linear-gradient(to top, #000 45%, transparent 100%),
-      repeating-linear-gradient(90deg, #000 0 3px, transparent 3px 5px);
-    -webkit-mask-composite: source-over;
-    mask: linear-gradient(to top, #000 40%, transparent 100%) add,
-      repeating-linear-gradient(90deg, #000 0 3px, rgb(0 0 0 / 0.55) 3px 6px) add;
+    inset: -30% -14% 0;
+    background: var(--grass) 50% 62% / max(100vw, 1100px) auto;
+    -webkit-mask:
+      linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
+      linear-gradient(to top, #000 35%, transparent);
+    -webkit-mask-composite: source-in;
+    mask:
+      linear-gradient(to right, transparent, #000 22%, #000 78%, transparent),
+      linear-gradient(to top, #000 35%, transparent);
+    mask-composite: intersect;
   }
   /* Contact shadow on the grass. */
   .hang-ground::after {
@@ -618,6 +1337,10 @@ body {
   }
 }
 
+/* Paused: the phone neither hops nor shakes. */
+:root[data-motion="still"] :is(.phone-body, .phone-handset) {
+  animation: none !important;
+}
 /* Paused: letters simply sit in place (never frozen mid-fall). */
 :root[data-motion="still"] .hero-letter {
   animation: none;
@@ -644,14 +1367,30 @@ img[data-loaded] {
 }
 
 /* Paused by the user, or the scope is off-screen: freeze looping animations. */
-:root[data-motion="still"] :is(.engine-hum, .engine-kick, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin, .hero-letter),
-[data-offscreen="true"] :is(.engine-hum, .engine-kick, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin) {
+:root[data-motion="still"] :is(.engine-hum, .engine-kick, .float-bob, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin, .hero-letter, .drift-across),
+[data-offscreen="true"] :is(.engine-hum, .engine-kick, .float-bob, .smoke-puff, .smoke-puff-late, .contact-shadow, .billow, .collage-drift, .hang-spin, .drift-across) {
   animation-play-state: paused;
+}
+/* Paused: the door just stands ajar — no swinging wider on hover. */
+:root[data-motion="still"] .field-door {
+  --door-a: var(--ajar) !important;
+  transition: none;
+}
+:root[data-motion="still"] .door-leaf {
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+  /* The crossing bubble simply rests in the sky on the right. */
+  .drift-across {
+    transform: translateX(72vw);
+  }
+  /* No droplets hang in the air (lib/pop.ts skips them too). */
+  .pop-drop {
+    display: none;
   }
   *,
   *::before,

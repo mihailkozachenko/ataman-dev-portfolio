@@ -155,7 +155,7 @@ export function HeroTitle() {
       ref={ref}
       id="hero-title"
       aria-label="Ataman Dev"
-      className="hero-drop text-display text-[clamp(3.5rem,14.5vw,11.5rem)] leading-[0.82] text-paper [text-shadow:0_4px_0_rgb(10_10_10/0.35)]"
+      className="hero-drop text-display text-[length:var(--step-hero)] leading-[0.82] text-paper"
     >
       {WORDS.map((word) => (
         <span key={word} aria-hidden="true" className="block whitespace-nowrap">

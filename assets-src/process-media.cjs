@@ -281,8 +281,68 @@ async function animShifted(srcGif, out, shift, { width, quality = 55, slow = 1 }
   report.push(`${out.padEnd(22)} ${info.width}x${ph} shift ${shift}f  ${(fs.statSync(q(out)).size / 1024).toFixed(0)} KB`);
 }
 
+/* ---------- smoke sprites for the particle system ----------
+   Every sprite is multiplied by an elliptical falloff that reaches zero well
+   inside its box, so no sprite can ever show a straight cut edge. */
+const SMOKE_PX = 384;
+function featherEllipse(img, inner = 0.55) {
+  const { data: d, w, h } = img;
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const nx = (x + 0.5) / w - 0.5;
+      const ny = (y + 0.5) / h - 0.5;
+      const r = Math.sqrt(nx * nx + ny * ny) * 2; // 0 centre … 1 edge midpoints
+      const i = (y * w + x) * 4 + 3;
+      d[i] = Math.round(d[i] * (1 - smooth(inner, 0.98, r)));
+    }
+}
+// Generated sources: white smoke on pure black → luminance becomes alpha.
+async function smokeFromBlack(src, out) {
+  const img = await raw(src);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = (0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]) / 255;
+    const a = smooth(0.04, 0.8, lum);
+    // Un-premultiply so the shading survives, tinted to a neutral smoke white.
+    const k = a > 0.01 ? Math.min(1, lum / a) : 1;
+    const v = Math.round(255 * (0.55 + 0.45 * k));
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = Math.round(a * 255);
+  }
+  featherEllipse(img, 0.6);
+  await saveWebp(img, out, { maxSide: SMOKE_PX, quality: 78 });
+}
+// Interim sources: soft round puffs cut out of the (already cleaned) cloud photos.
+async function smokeFromCloud(srcWebp, out, box) {
+  const cut = await sharp(srcWebp).extract(box).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const img = { data: cut.data, w: cut.info.width, h: cut.info.height };
+  featherEllipse(img, 0.35);
+  await saveWebp(img, out, { maxSide: SMOKE_PX, quality: 78 });
+}
+
 (async () => {
   const jobs = {
+    smoke: async () => {
+      const gen = [1, 2, 3, 4, 5, 6].map((n) => p(`smoke/smoke-${n}.png`)).filter((f) => fs.existsSync(f));
+      if (gen.length) {
+        for (const [k, f] of gen.entries()) await smokeFromBlack(f, `smoke-puff-${k + 1}.webp`);
+        report.push(`  smoke: ${gen.length} generated sources (luminance → alpha)`);
+        return;
+      }
+      // No generated sources yet: interim puffs from the cloud photos.
+      const c1 = q("cloud-1.webp"); // 1024 × 467
+      const c2 = q("cloud-2.webp"); // 974 × 491
+      const boxes = [
+        [c1, { left: 20, top: 40, width: 380, height: 360 }],
+        [c1, { left: 300, top: 30, width: 420, height: 380 }],
+        [c1, { left: 620, top: 20, width: 390, height: 360 }],
+        [c2, { left: 30, top: 100, width: 400, height: 340 }],
+        [c2, { left: 240, top: 20, width: 440, height: 400 }],
+        [c2, { left: 540, top: 110, width: 420, height: 370 }],
+      ];
+      for (const [k, [src, box]] of boxes.entries()) await smokeFromCloud(src, `smoke-puff-${k + 1}.webp`, box);
+      report.push("  smoke: interim puffs cut from cloud-1/cloud-2 (no generated sources found)");
+    },
     bubbles: async () => {
       for (const n of [1, 2, 3, 4]) await bubble(`bubble-${n}.jpg`, `bubble-${n}.webp`);
     },
@@ -297,15 +357,71 @@ async function animShifted(srcGif, out, shift, { width, quality = 55, slow = 1 }
     grass: () => grass("field-original.jpg", "grass.webp"),
     anims: async () => {
       await anim("cloud-anim-1.gif", "cloud-anim-1.webp", { slow: 2, width: 400 });
-      await anim("smoke-anim-1.gif", "smoke-anim-1.webp", { slow: 2 });
-      // Out-of-phase copies of the plume, smaller: they sit further along it, blurred.
-      await animShifted("smoke-anim-1.gif", "smoke-anim-1b.webp", 19, { slow: 2 });
-      await animShifted("smoke-anim-1.gif", "smoke-anim-1c.webp", 38, { slow: 2 });
-      // smoke-anim-3.gif is NOT processed: it carries a stock watermark.
-      // smoke-anim-4.gif is NOT used: sparse orange speckle, barely visible on the sky.
-      // Single frames for reduced motion / paused / off-screen.
-      for (const [name, page] of [["cloud-anim-1", 0], ["smoke-anim-1", 29], ["smoke-anim-1b", 29], ["smoke-anim-1c", 29]])
-        await sharp(q(name + ".webp"), { page }).webp({ quality: 75, alphaQuality: 85, effort: 6 }).toFile(q(name + "-still.webp"));
+      // The smoke-anim-*.gif plumes are no longer used: the fog is the SmokeMass
+      // particle system (smoke-puff-*.webp). animShifted() is kept for reuse.
+      // Single frame for reduced motion / paused / off-screen.
+      await sharp(q("cloud-anim-1.webp"), { page: 0 }).webp({ quality: 75, alphaQuality: 85, effort: 6 }).toFile(q("cloud-anim-1-still.webp"));
+    },
+    // Header Contact link: the generated rotary phone (already transparent).
+    phone: async () => {
+      const img = await raw(p("phone/phone-2.png"));
+      await saveWebp(img, "phone.webp", { maxSide: 192, quality: 86 });
+    },
+    // The door on the hill (generate-door.mjs): white frame-3 + leaf-4, cropped tight
+    // to their alpha (no margin: the opening is measured on the final frame and
+    // the leaf is stretched onto it), then the opening is found — the
+    // transparent hole between the casings, open at the bottom (no threshold).
+    door: async () => {
+      const tight = async (src, out, height) => {
+        const img = await raw(p(src));
+        let x0 = img.w, y0 = img.h, x1 = 0, y1 = 0;
+        for (let y = 0; y < img.h; y++)
+          for (let x = 0; x < img.w; x++)
+            if (img.data[(y * img.w + x) * 4 + 3] > 128) {
+              if (x < x0) x0 = x;
+              if (x > x1) x1 = x;
+              if (y < y0) y0 = y;
+              if (y > y1) y1 = y;
+            }
+        await sharp(img.data, { raw: { width: img.w, height: img.h, channels: 4 } })
+          .extract({ left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 })
+          .resize({ height })
+          .webp({ quality: 84, alphaQuality: 92, effort: 6 })
+          .toFile(q(out));
+        const m = await sharp(q(out)).metadata();
+        report.push(`${out.padEnd(22)} ${m.width}x${m.height}  ${(fs.statSync(q(out)).size / 1024).toFixed(0)} KB`);
+        return m;
+      };
+      await tight("door/frame-3.png", "door-frame.webp", 640);
+      await tight("door/leaf-4.png", "door-leaf.webp", 640);
+      // The world behind the door: the left part of the original field photo —
+      // the cloud bank and the hill's left slope (the page shows its middle) —
+      // with a slightly deeper sky.
+      await sharp(p("field-original.jpg"))
+        .extract({ left: 38, top: 333, width: 781, height: 1201 }) // full size: it fills the screen on click
+        .modulate({ saturation: 1.25 })
+        .webp({ quality: 80, effort: 6 })
+        .toFile(q("door-portal.webp"));
+      const pm = await sharp(q("door-portal.webp")).metadata();
+      report.push(`door-portal.webp       ${pm.width}x${pm.height}  ${(fs.statSync(q("door-portal.webp")).size / 1024).toFixed(0)} KB`);
+      // The opening, scanned out from the centre on many rows / columns (medians).
+      const fr = await raw(q("door-frame.webp"));
+      const solid = (x, y) => fr.data[(y * fr.w + x) * 4 + 3] > 128;
+      const cx = Math.round(fr.w / 2);
+      const med = (a) => a.sort((m, n) => m - n)[a.length >> 1];
+      const lefts = [], rights = [], tops = [];
+      for (let y = Math.round(fr.h * 0.3); y < fr.h * 0.9; y += 7) {
+        let x = cx; while (x > 0 && !solid(x, y)) x--; lefts.push(x + 1);
+        x = cx; while (x < fr.w - 1 && !solid(x, y)) x++; rights.push(x);
+      }
+      for (let x = Math.round(fr.w * 0.35); x < fr.w * 0.65; x += 5) {
+        let y = Math.round(fr.h * 0.5); while (y > 0 && !solid(x, y)) y--; tops.push(y + 1);
+      }
+      const o = { x: med(lefts), y: med(tops), r: med(rights) };
+      const pct = (v, d) => +((100 * v) / d).toFixed(2);
+      report.push(
+        `door opening (frame box %): left ${pct(o.x, fr.w)}, top ${pct(o.y, fr.h)}, width ${pct(o.r - o.x, fr.w)}, height ${pct(fr.h - o.y, fr.h)}  (frame ${fr.w}x${fr.h})`,
+      );
     },
   };
   for (const [name, job] of Object.entries(jobs)) if (!ONLY || ONLY === name) await job();

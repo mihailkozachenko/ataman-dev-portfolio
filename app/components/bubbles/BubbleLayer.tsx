@@ -27,7 +27,9 @@ export function BubbleLayer({ emitter }: { emitter: Emitter }) {
   }, []);
 
   return (
-    <div ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[5] overflow-hidden">
+    // Above the hill and the machine (z-10), so the stream is visible right from
+    // the machine's mouth; below the text and the contact card (z-20).
+    <div ref={layerRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-[15] overflow-hidden">
       {show && (
         <BubbleStream
           containerRef={layerRef}

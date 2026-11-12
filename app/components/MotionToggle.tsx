@@ -6,7 +6,7 @@ import { PauseIcon, PlayIcon, StopIcon } from "./icons";
 /**
  * WCAG 2.2.2 (Pause, Stop, Hide): looping motion must be stoppable by the user,
  * not only via the OS setting. MotionDirector applies the state to the page.
- * Fixed width in every state, so swapping labels never shifts the header.
+ * A 44px icon square; the label is for screen readers and the tooltip.
  */
 export function MotionToggle() {
   const reduced = usePrefersReducedMotion();
@@ -14,21 +14,23 @@ export function MotionToggle() {
 
   if (reduced) {
     return (
-      <span className="plaque plaque-white toggle-plaque text-xs">
+      <span className="xp-btn xp-btn-icon xp-btn-off" title="Motion off (system setting)">
         <StopIcon />
-        <span className="sr-only sm:not-sr-only">Motion off</span>
+        <span className="sr-only">Motion off</span>
       </span>
     );
   }
 
+  const label = paused ? "Play motion" : "Pause motion";
   return (
     <button
       type="button"
       onClick={() => setMotionPaused(!paused)}
-      className="plaque plaque-white toggle-plaque text-xs"
+      className="xp-btn xp-btn-icon"
+      title={label}
     >
       {paused ? <PlayIcon /> : <PauseIcon />}
-      <span className="sr-only sm:not-sr-only">{paused ? "Play motion" : "Pause motion"}</span>
+      <span className="sr-only">{label}</span>
     </button>
   );
 }

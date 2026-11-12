@@ -5,25 +5,32 @@ import { clouds } from "../../data/media";
 import type { Project } from "../../data/projects";
 import { useAnimationGate } from "../../lib/motion";
 import { useDrift } from "../../lib/useDrift";
-import { ArrowUpRightIcon } from "../icons";
 import { Photo } from "../media/Picture";
 
 /*
- * Desktop slots along the plume, in cqw of the fog scene (centre x, centre y from
- * the bottom). Each sits on a spot where the smoke thickens (see FogSection).
- * Extra slots are ready for more projects.
+ * Desktop slots in the smoke mass, in cqw of the fog scene (centre x, centre y
+ * from the bottom, width). The first project is the big one in the middle; the
+ * next two are smaller, on either side. Extra slots are ready for more projects.
  */
 const SLOTS = [
-  { x: 67, y: 28 },
-  { x: 55, y: 50 },
-  { x: 79, y: 72 },
-  { x: 88, y: 50 },
-  { x: 40, y: 34 },
+  { x: 57, y: 47, w: 50 },
+  { x: 24, y: 58, w: 31 },
+  { x: 84, y: 64, w: 30 },
+  { x: 86, y: 30, w: 28 },
+  { x: 30, y: 34, w: 28 },
 ];
-// Phones: a single column, nudged left/right so it still reads as a rising plume.
-// Reversed visually (flex-col-reverse) so the first project sits nearest the machine,
-// while the DOM / reading order stays first-to-last.
-const MOBILE_NUDGE = [10, -8, 6, -6, 8];
+// Phones: a single column. The first (big) project sits in the middle of the
+// column; the others are narrower and nudged left / right.
+const MOBILE = [
+  { nudge: 0, w: 100 },
+  { nudge: -9, w: 78 },
+  { nudge: 9, w: 78 },
+  { nudge: -6, w: 78 },
+  { nudge: 6, w: 78 },
+];
+// Visual order on phones: second project on top, the big first one in the
+// middle, the third below it (DOM / reading order stays first-to-last).
+const MOBILE_ORDER = [2, 1, 3, 4, 5];
 const DRIFT = { ampX: 18, ampY: 8, speed: 0.18 };
 
 /**
@@ -39,11 +46,12 @@ export function ProjectClouds({ projects }: { projects: Project[] }) {
   return (
     <ul
       ref={listRef}
-      className="relative z-20 mt-8 flex flex-col-reverse items-center gap-1 lg:pointer-events-none lg:absolute lg:inset-0 lg:mt-0 lg:block"
+      className="relative z-20 mt-8 flex flex-col items-center gap-2 lg:pointer-events-none lg:absolute lg:inset-0 lg:mt-0 lg:block"
     >
       {projects.map((project, i) => {
         const cloud = clouds[i % clouds.length];
         const slot = SLOTS[i % SLOTS.length];
+        const phone = MOBILE[i % MOBILE.length];
         return (
           <li
             key={project.url}
@@ -53,7 +61,9 @@ export function ProjectClouds({ projects }: { projects: Project[] }) {
               {
                 "--x": slot.x,
                 "--y": slot.y,
-                "--nudge": `${MOBILE_NUDGE[i % MOBILE_NUDGE.length]}vw`,
+                "--w": slot.w,
+                "--nudge": `${phone.nudge}vw`,
+                order: MOBILE_ORDER[i] ?? i + 1,
               } as CSSProperties
             }
           >
@@ -61,23 +71,22 @@ export function ProjectClouds({ projects }: { projects: Project[] }) {
               href={project.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="cloud-link floaty relative block w-[min(calc(100vw-3rem),420px)] text-ink [container-type:inline-size] lg:w-[34cqw]"
-              style={{ aspectRatio: `${cloud.width} / ${cloud.height}` }}
+              className="cloud-link floaty relative block w-[calc(min(100vw-2rem,480px)*var(--mw-cloud-k,1))] text-ink [container-type:inline-size] lg:w-[calc(var(--w)*1cqw)]"
+              style={{ aspectRatio: `${cloud.width} / ${cloud.height}`, ["--mw-cloud-k" as string]: phone.w / 100 }}
             >
               <Photo
                 photo={cloud}
                 sizes="(max-width: 1024px) 100vw, 400px"
-                className="cloud-img absolute inset-0 h-full w-full object-contain drop-shadow-[0_12px_16px_rgb(5_25_80/0.22)]"
+                className="cloud-img absolute inset-0 h-full w-full object-contain"
               />
               <span
-                className="absolute w-[62%] -translate-x-1/2 -translate-y-1/2 text-center"
+                className="absolute w-[66%] -translate-x-1/2 -translate-y-1/2 text-center"
                 style={{ left: `${cloud.text.x}%`, top: `${cloud.text.y}%` }}
               >
-                <span className="text-glow text-display block text-[6.2cqw] leading-none">
+                <span className="cloud-name text-glow text-display block text-[7cqw] leading-none">
                   {project.name}
-                  <ArrowUpRightIcon className="ml-[0.25em] inline-block h-[0.62em] w-[0.62em] align-baseline" />
                 </span>
-                <span className="text-glow mt-[1.2cqw] block text-[3.3cqw] font-semibold leading-tight">
+                <span className="text-glow mt-[1.6cqw] block text-[3.9cqw] font-medium leading-[1.3]">
                   {project.description}
                 </span>
               </span>

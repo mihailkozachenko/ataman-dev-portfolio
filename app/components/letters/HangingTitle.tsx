@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { grass } from "../../data/media";
-import { useStillMotion } from "../../lib/motion";
+import { usePrefersReducedMotion, useStillMotion } from "../../lib/motion";
 import { playPop } from "../../lib/sound";
 
 type Phase = "hanging" | "falling" | "landed";
@@ -17,7 +17,9 @@ const REST_DEG = 80;
  * and comes to rest lying on the slope — with a contact shadow, grass blades over
  * its lower edge and a slightly darker, cooler tone. Its slot in the heading
  * becomes a chroma-key (#00FF00) hole in the exact shape of the glyph.
- * With motion reduced/paused the letter simply lies on the grass from the start.
+ * By default it hangs and falls only on click. Only prefers-reduced-motion puts it
+ * on the grass from the start; the user's "Pause motion" (persisted) only stops
+ * the swing — a click then drops it instantly, without the fall animation.
  */
 export function HangingTitle({
   text,
@@ -30,7 +32,8 @@ export function HangingTitle({
   id: string;
   className: string;
 }) {
-  const still = useStillMotion();
+  const still = useStillMotion(); // reduced OR paused: no fall animation
+  const reduced = usePrefersReducedMotion(); // only this starts it on the grass
   const [phase, setPhase] = useState<Phase>("hanging");
   const slotRef = useRef<HTMLSpanElement>(null); // never transformed: the resting reference
   const flyRef = useRef<HTMLSpanElement>(null); // translate
@@ -135,14 +138,14 @@ export function HangingTitle({
     raf.current = requestAnimationFrame(step);
   }, [phase, landing, still]);
 
-  // Motion off: it has already fallen.
+  // Reduced motion (system setting): it has already fallen.
   useEffect(() => {
-    if (still && phase === "hanging") {
+    if (reduced && phase === "hanging") {
       cancelAnimationFrame(raf.current);
       const id = requestAnimationFrame(() => setPhase("landed"));
       return () => cancelAnimationFrame(id);
     }
-  }, [still, phase]);
+  }, [reduced, phase]);
 
   // Keep it on the grass through layout changes.
   useEffect(() => {
@@ -197,7 +200,7 @@ export function HangingTitle({
         <button
           type="button"
           onClick={drop}
-          className="plaque plaque-white sr-only text-xs focus:not-sr-only focus:absolute focus:right-0 focus:top-full focus:mt-2"
+          className="xp-btn xp-btn-sm sr-only focus:not-sr-only focus:absolute focus:right-0 focus:top-full focus:mt-2"
         >
           Knock the loose letter off
         </button>

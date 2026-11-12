@@ -3,6 +3,8 @@
 import { getImageProps } from "next/image";
 import { useEffect, useRef, type RefObject } from "react";
 import { bubbles } from "../../data/media";
+import { popBubble } from "../../lib/pop";
+import { playPop } from "../../lib/sound";
 
 export type Emitter = {
   /** Fraction of the emitter element's box. */
@@ -45,6 +47,8 @@ type Bubble = {
   life: number;
   size: number;
   seed: number;
+  /** Simulation time before which this slot may not spawn again (after a pop). */
+  rest: number;
 };
 
 const POOL = 14;
@@ -79,7 +83,7 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
 
     if (pool.current.length === 0) {
       for (let i = 0; i < POOL; i++) {
-        pool.current.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 0, size: 0, seed: 0 });
+        pool.current.push({ alive: false, x: 0, y: 0, vx: 0, vy: 0, age: 0, life: 0, size: 0, seed: 0, rest: 0 });
       }
     }
     const bubbles = pool.current;
@@ -88,6 +92,7 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
     const dir = { x: Math.cos(rad), y: Math.sin(rad) };
 
     let wand = { x: 0, y: 0 };
+    let mouth = 0;
     let bounds = { w: 0, h: 0 };
     let count = POOL;
     let scaleK = 1;
@@ -96,6 +101,7 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
       const box = container.getBoundingClientRect();
       const e = emitter.getBoundingClientRect();
       wand = { x: e.left - box.left + e.width * nozzle.x, y: e.top - box.top + e.height * nozzle.y };
+      mouth = e.width * 0.3; // the open front of the machine, where the wands turn
       bounds = { w: box.width, h: box.height };
       const mobile = box.width < 640;
       count = mobile ? POOL_MOBILE : POOL;
@@ -113,8 +119,10 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
         const spot = STATIC_LAYOUT[i];
         if (!spot || i >= count) {
           el.style.opacity = "0";
+          el.style.pointerEvents = "none";
           return;
         }
+        el.style.pointerEvents = "auto";
         // Along the stream direction plus a perpendicular offset, with a little upward bias.
         const x = wand.x + dir.x * spot.d * scaleK - dir.y * spot.p * scaleK;
         const y = wand.y + dir.y * spot.d * scaleK + dir.x * spot.p * scaleK - spot.d * 0.25;
@@ -124,26 +132,73 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
 
     measure();
 
+    // Press a bubble: it pops on the spot — picture and sound in the same frame.
+    let simTime = 0;
+    const listeners: [HTMLImageElement, (e: PointerEvent) => void][] = [];
+    const bindPop = (pop: (i: number, el: HTMLImageElement) => void) => {
+      els.current.forEach((el, i) => {
+        if (!el) return;
+        const fn = (e: PointerEvent) => {
+          e.stopPropagation();
+          pop(i, el);
+        };
+        el.addEventListener("pointerdown", fn);
+        listeners.push([el, fn]);
+      });
+    };
+    const unbind = () => listeners.forEach(([el, fn]) => el.removeEventListener("pointerdown", fn));
+
     if (still) {
       placeStatic();
+      // Motion off: the bubble just vanishes and comes back later.
+      const timers: number[] = [];
+      bindPop((_, el) => {
+        if (el.dataset.popped) return;
+        playPop(0.7);
+        el.dataset.popped = "true";
+        el.style.opacity = "0";
+        el.style.pointerEvents = "none";
+        timers.push(
+          window.setTimeout(() => {
+            delete el.dataset.popped;
+            el.style.opacity = "1";
+            el.style.pointerEvents = "auto";
+          }, 4000),
+        );
+      });
       const observer = new ResizeObserver(() => {
         measure();
         placeStatic();
       });
       observer.observe(container);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        unbind();
+        timers.forEach((t) => window.clearTimeout(t));
+      };
     }
 
     const observer = new ResizeObserver(measure);
     observer.observe(container);
     if (!active) return () => observer.disconnect();
 
+    bindPop((i, el) => {
+      const b = bubbles[i];
+      if (!b.alive) return;
+      playPop(0.7);
+      // The slot is free at once (draw() hides it); the pop animation plays over
+      // that hidden state for POP_MS, frozen where the bubble was.
+      popBubble(el, { drops: 7, hold: false });
+      b.alive = false;
+      b.rest = simTime + 2.5 + rnd() * 1.5; // a new one from this slot in a few seconds
+    });
+
     const spawn = (b: Bubble) => {
       const a = rad + (rnd() - 0.5) * 0.8;
       const speed = 90 + rnd() * 120;
       b.alive = true;
-      b.x = wand.x;
-      b.y = wand.y;
+      b.x = wand.x + (rnd() - 0.5) * mouth;
+      b.y = wand.y + (rnd() - 0.5) * mouth * 0.15;
       b.vx = Math.cos(a) * speed;
       b.vy = Math.sin(a) * speed;
       b.age = 0;
@@ -154,11 +209,12 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
 
     let spawnAcc = 0;
     const step = (dt: number) => {
+      simTime += dt;
       spawnAcc += dt;
       const interval = count === POOL ? 0.38 : 0.6;
       while (spawnAcc >= interval) {
         spawnAcc -= interval;
-        const free = bubbles.slice(0, count).find((b) => !b.alive);
+        const free = bubbles.slice(0, count).find((b) => !b.alive && b.rest <= simTime);
         if (free) spawn(free);
       }
       for (let i = 0; i < count; i++) {
@@ -189,8 +245,10 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
         const b = bubbles[i];
         if (i >= count || !b.alive) {
           if (el.style.opacity !== "0") el.style.opacity = "0";
+          if (el.style.pointerEvents !== "none") el.style.pointerEvents = "none";
           continue;
         }
+        if (el.style.pointerEvents !== "auto") el.style.pointerEvents = "auto";
         const grow = Math.min(1, 0.3 + (b.age / 0.5) * 0.7);
         const popT = Math.max(0, (b.age - (b.life - 0.2)) / 0.2);
         const wobble = Math.sin(b.age * 2.2 + b.seed * 6.28) * 6 * (b.size / 40);
@@ -212,6 +270,7 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
+      unbind();
     };
   }, [active, still, containerRef, emitterRef, nozzle.x, nozzle.y, angle]);
 
@@ -228,6 +287,7 @@ export function BubbleStream({ containerRef, emitterRef, emitter, active, still 
             ref={(el) => {
               els.current[i] = el;
             }}
+            data-poppable=""
             className="bubble-deco object-contain"
           />
         );
