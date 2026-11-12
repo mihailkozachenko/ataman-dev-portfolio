@@ -396,12 +396,50 @@ async function smokeFromCloud(srcWebp, out, box) {
       await tight("door/leaf-4.png", "door-leaf.webp", 640);
       // The world behind the door: the left part of the original field photo —
       // the cloud bank and the hill's left slope (the page shows its middle) —
-      // with a slightly deeper sky.
-      await sharp(p("field-original.jpg"))
-        .extract({ left: 38, top: 333, width: 781, height: 1201 }) // full size: it fills the screen on click
-        .modulate({ saturation: 1.25 })
-        .webp({ quality: 80, effort: 6 })
-        .toFile(q("door-portal.webp"));
+      // with "another world's" sky: a deep, saturated azure (much bluer than the
+      // page's pale horizon), the clouds left white, and the grass a touch brighter.
+      {
+        const { data, info } = await sharp(p("field-original.jpg"))
+          .extract({ left: 38, top: 333, width: 781, height: 1201 }) // full size: it fills the screen on click
+          .removeAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        const { width: w, height: h } = info;
+        // Sky gradient, top → horizon (≈ 45 % of the crop).
+        const TOP = [22, 98, 232];
+        const LOW = [84, 160, 250];
+        for (let y = 0; y < h; y++) {
+          const t = smooth(0, 0.5, y / h);
+          const sky = TOP.map((c, k) => c + (LOW[k] - c) * t);
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 3;
+            const r = data[i], g = data[i + 1], b = data[i + 2];
+            // Sky: blue above green (grass is the other way round), and not a
+            // white cloud (the sky's red stays under ~180 even at the horizon).
+            const s = smooth(8, 30, b - g) * (1 - smooth(190, 232, r));
+            // Grass: green clearly above blue.
+            const gr = smooth(20, 60, g - b);
+            if (s > 0) {
+              // Keep the photo's own grain: the sky colour scaled by the pixel's lightness.
+              const lum = (0.3 * r + 0.59 * g + 0.11 * b) / 175;
+              for (let k = 0; k < 3; k++) {
+                const target = clamp(sky[k] * (0.85 + 0.15 * lum), 0, 255);
+                data[i + k] = Math.round(data[i + k] + (target - data[i + k]) * s);
+              }
+            }
+            if (gr > 0) {
+              const k = 1 + 0.1 * gr;
+              data[i] = clamp(Math.round(r * k), 0, 255);
+              data[i + 1] = clamp(Math.round(g * (1 + 0.13 * gr)), 0, 255);
+              data[i + 2] = clamp(Math.round(b * k), 0, 255);
+            }
+          }
+        }
+        await sharp(data, { raw: { width: w, height: h, channels: 3 } })
+          .modulate({ saturation: 1.04 })
+          .webp({ quality: 80, effort: 6 })
+          .toFile(q("door-portal.webp"));
+      }
       const pm = await sharp(q("door-portal.webp")).metadata();
       report.push(`door-portal.webp       ${pm.width}x${pm.height}  ${(fs.statSync(q("door-portal.webp")).size / 1024).toFixed(0)} KB`);
       // The opening, scanned out from the centre on many rows / columns (medians).

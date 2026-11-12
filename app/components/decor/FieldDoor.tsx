@@ -9,13 +9,15 @@ import { Photo } from "../media/Picture";
 
 /*
  * Leaf angles: how far the leaf has swung OUT, towards the viewer, about its
- * hinge on the left (0 = shut). Past 90° it lies to the left of the opening and
- * the whole portal shows, as on the reference — at a true 30° the leaf would
- * still hide ~85 % of it.
+ * hinge on the left (0 = shut). Three states that read at a glance (share of
+ * the opening the portal shows, with this perspective):
+ *   AJAR  — at rest: a narrow strip of the other world (~13 %);
+ *   WIDER — hover / keyboard focus: most of it (~60 %, ≈ 5× the strip);
+ *   OPEN  — click: flung wide past the casing, the whole portal, then the zoom.
  */
-const AJAR = 128;
-const WIDER = 150;
-const OPEN = 168;
+const AJAR = 32;
+const WIDER = 68;
+const OPEN = 165;
 /** Where the leaf's edges sit, % of the opening (a hair under the casing at hinge and head). */
 const LEAF_EDGES = { hinge: -1.5, top: -0.8, free: -1, bottom: 0 };
 /** Portal parallax: how far the far world drifts, px, at the edge of the screen. */
@@ -225,6 +227,7 @@ export function FieldDoor() {
           <img ref={portalImg} {...PORTAL} alt="" className="door-portal-img" />
         </span>
         <Photo photo={door.frame} sizes="(max-width: 640px) 60px, 100px" className="door-frame" />
+        <span aria-hidden="true" className="door-light" style={{ "--mask": `url(${door.frame.src})` } as CSSProperties} />
         <span
           aria-hidden="true"
           className="door-leaf"
@@ -236,6 +239,9 @@ export function FieldDoor() {
           }}
         >
           <Photo photo={door.leaf} sizes="(max-width: 640px) 60px, 100px" className="h-full w-full" />
+          {/* Soft light from above on the paint, and a glint on the handle. */}
+          <span aria-hidden="true" className="door-light" style={{ "--mask": `url(${door.leaf.src})` } as CSSProperties} />
+          <span aria-hidden="true" className="door-glint" />
         </span>
       </button>
       {/* Blades of the field's own grass over the door's foot. */}

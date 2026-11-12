@@ -621,15 +621,16 @@ body {
     border: 0;
     background: none;
     cursor: pointer;
-    /* Eye level a little below the head of the door, near the horizon. */
-    perspective: calc(var(--dh) * 3.2);
-    perspective-origin: 50% 70%;
+    /* Eye level a little above the door's middle: the leaf swinging towards
+       us grows a little, but its top corner stays under the head casing. */
+    perspective: calc(var(--dh) * 4);
+    perspective-origin: 50% 55%;
     -webkit-tap-highlight-color: transparent;
   }
   .door-portal {
     position: absolute;
     overflow: hidden;
-    background: #7fb4ef;
+    background: #2a6fe8;
   }
   /* The far world, a little larger than the opening so it can drift. */
   .door-portal-img,
@@ -653,24 +654,58 @@ body {
       inset -2px 0 3px -1px rgb(0 0 0 / 0.12);
     pointer-events: none;
   }
+  /* Clean white paint: the photos lifted to white, a touch more contrast so
+     the mouldings still read. */
   .door-frame {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
+    filter: brightness(1.1) contrast(1.08) saturate(0.7);
   }
   .door-leaf {
     position: absolute;
     transform-origin: 0 50%;
     transform: rotateY(calc(var(--door-a) * -1));
-    /* Its far side, turned to us, catches a little less light. */
-    filter: brightness(0.94);
+    filter: brightness(1.1) contrast(1.08) saturate(0.7);
   }
   .door-leaf img {
     display: block;
   }
+  /* Soft daylight from above on the paint, clipped to the photo's own shape. */
+  .door-light {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.55),
+      rgb(255 255 255 / 0.12) 30%,
+      transparent 55%,
+      rgb(20 40 60 / 0.06)
+    );
+    -webkit-mask: var(--mask) 0 0 / 100% 100% no-repeat;
+    mask: var(--mask) 0 0 / 100% 100% no-repeat;
+  }
+  /* A small specular glint on the lever's rose (handle: ~85 % across, mid height). */
+  .door-glint {
+    position: absolute;
+    left: 85%;
+    top: 50.4%;
+    width: 9%;
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(closest-side, rgb(255 255 255 / 0.95), rgb(255 255 255 / 0.35) 45%, transparent);
+    mix-blend-mode: screen;
+  }
+  :root:not([data-ready]) :is(.door-light, .door-glint) {
+    visibility: hidden;
+  }
   /* Contact shade on the grass: under the threshold, and under the leaf's foot
-     (as long as the leaf's footprint: the opening's width × −cos of its angle). */
+     (as long as the leaf's footprint across: the opening's width × |cos| of its
+     angle — to the right of the hinge while ajar, to the left once past 90°). */
   .door-shade {
     position: absolute;
     pointer-events: none;
@@ -683,9 +718,10 @@ body {
     height: 9px;
   }
   .door-shade-leaf {
-    --foot: calc(var(--dw) * var(--o-width) * -1 * cos(var(--door-a)) * 1.08);
-    left: calc(var(--o-left) - var(--foot));
-    width: calc(var(--foot) + 6px);
+    --c: cos(var(--door-a));
+    --len: calc(var(--dw) * var(--o-width) * 1.08);
+    left: calc(var(--o-left) - var(--len) * max(0, -1 * var(--c)) - 3px);
+    width: calc(var(--len) * max(var(--c), -1 * var(--c)) + 6px);
     top: calc(100% - 3px);
     height: calc(var(--dh) * 0.07);
   }
@@ -739,7 +775,7 @@ body {
     z-index: 75;
     overflow: hidden;
     pointer-events: none;
-    background: #7fb4ef;
+    background: #2a6fe8;
     transform-origin: 50% 50%;
     will-change: transform;
   }
@@ -970,7 +1006,7 @@ body {
 @property --door-a {
   syntax: "<angle>";
   inherits: true;
-  initial-value: 128deg;
+  initial-value: 32deg;
 }
 @keyframes xp-new-message {
   50% {
