@@ -32,8 +32,8 @@ export function Hero() {
         <div className="lg:col-span-9">
           <p className="mt-10 text-[length:var(--step-lead)] font-bold text-paper">{site.role}</p>
           <p className="lead mt-2 text-paper">
-            I build web applications with AI, authentication and payments. Fast delivery, honest
-            prices.
+            I automate business processes with AI and build web applications with authentication
+            and payments. Fast delivery, honest prices.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-4">

@@ -18,7 +18,7 @@ export const services: Service[] = [
     id: "automation",
     title: "Automation",
     description:
-      "Telegram bots, integrations and scripts that take the routine work off your plate.",
+      "Business processes automated with AI: Telegram bots, integrations and scripts that take the routine work off your plate.",
   },
   {
     id: "ai-chatbots",
