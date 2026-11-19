@@ -394,14 +394,13 @@ async function smokeFromCloud(srcWebp, out, box) {
       );
     },
     // The winged eye in the sky (generate-angel.mjs): one wing (the right one is
-    // its mirror), the studded ring, one small eye for the ring, and the central
-    // eye — the white with its lids plus the opening between them as a mask
-    // (it clips the moving iris and the blink) — and its iris.
+    // its mirror), the studded ring, and the eye (also used, smaller, round the
+    // ring) — the white with its lids plus the opening between them as a mask
+    // (it clips the moving iris), the same eye closed for the blink, and its iris.
     angel: async () => {
-      const PICK = { wing: "wing-1", ring: "ring-2", small: "small-1", white: "white-2", iris: "iris-1" };
+      const PICK = { wing: "wing-1", ring: "ring-2", white: "white-2", closed: "closed-1", iris: "iris-1" };
       await saveWebp(await raw(p(`angel/${PICK.wing}.png`)), "angel-wing.webp", { maxSide: 560, quality: 84 });
       await saveWebp(await raw(p(`angel/${PICK.ring}.png`)), "angel-ring.webp", { maxSide: 520, quality: 86 });
-      await saveWebp(await raw(p(`angel/${PICK.small}.png`)), "angel-eye-small.webp", { maxSide: 96, quality: 86 });
       await saveWebp(await raw(p(`angel/${PICK.iris}.png`)), "angel-iris.webp", { maxSide: 160, quality: 86 });
 
       const W = 300;
@@ -452,6 +451,13 @@ async function smokeFromCloud(srcWebp, out, box) {
       };
       await out(src.data, "angel-eye-white.webp", 86);
       await out(mask, "angel-eye-opening.webp", 70);
+      // The same eye closed (an edit of this photo): its colours, but the open
+      // eye's alpha, so both share one cut-out outline pixel for pixel. Same box.
+      const closed = await raw(p(`angel/${PICK.closed}.png`));
+      if (closed.w !== src.w || closed.h !== src.h) throw new Error("closed eye must match the open one's size");
+      const shut = Buffer.from(closed.data);
+      for (let k = 3; k < shut.length; k += 4) shut[k] = src.data[k];
+      await out(shut, "angel-eye-closed.webp", 86);
       const pct = (v, o, d) => +((100 * (v - o)) / d).toFixed(1);
       report.push(
         `angel eye opening (eye box %): left ${pct(mx0, x0, box.width)}, top ${pct(my0, y0, box.height)}, ` +

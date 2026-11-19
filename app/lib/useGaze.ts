@@ -11,6 +11,12 @@ export type GazeOptions = {
   ease?: number;
   /** Blink every min..max ms, for ms. */
   blink?: { min: number; max: number; ms: number };
+  /**
+   * Several eyes looking together: every element matching this selector inside
+   * the root is an iris, moved within its own eye (its closest `[data-eye]`),
+   * so a small eye travels proportionally less. `irisRef` is then unused.
+   */
+  irises?: string;
 };
 
 /**
@@ -25,17 +31,21 @@ export function useGaze(
   rootRef: RefObject<HTMLElement | null>,
   irisRef: RefObject<HTMLElement | null>,
   still: boolean,
-  { reach, fullTurn = 420, ease = 0.12, blink: blinkAt = { min: 4000, max: 8000, ms: 240 } }: GazeOptions,
+  { reach, fullTurn = 420, ease = 0.12, blink: blinkAt = { min: 4000, max: 8000, ms: 240 }, irises: selector }: GazeOptions,
 ) {
   const rx = reach.x;
   const ry = reach.y;
   const { min, max, ms } = blinkAt;
   useEffect(() => {
     const el = rootRef.current;
-    const img = irisRef.current;
-    if (!el || !img) return;
+    if (!el) return;
+    // Each iris with the box it moves in.
+    const eyes = (selector ? Array.from(el.querySelectorAll<HTMLElement>(selector)) : [irisRef.current])
+      .filter((i): i is HTMLElement => !!i)
+      .map((iris) => ({ iris, box: (selector && iris.closest<HTMLElement>("[data-eye]")) || el }));
+    if (!eyes.length) return;
     if (still) {
-      img.style.transform = "";
+      eyes.forEach(({ iris }) => (iris.style.transform = ""));
       el.removeAttribute("data-blink");
       return;
     }
@@ -52,8 +62,10 @@ export function useGaze(
       raf = 0;
       cur.x += (target.x - cur.x) * ease;
       cur.y += (target.y - cur.y) * ease;
-      const w = el.offsetWidth;
-      img.style.transform = `translate(${((cur.x * rx * w) / 100).toFixed(2)}px, ${((cur.y * ry * w) / 100).toFixed(2)}px)`;
+      for (const { iris, box } of eyes) {
+        const w = box.offsetWidth;
+        iris.style.transform = `translate(${((cur.x * rx * w) / 100).toFixed(2)}px, ${((cur.y * ry * w) / 100).toFixed(2)}px)`;
+      }
       if (onScreen && (Math.abs(target.x - cur.x) > 0.002 || Math.abs(target.y - cur.y) > 0.002)) kick();
     };
     const kick = () => {
@@ -120,5 +132,5 @@ export function useGaze(
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [rootRef, irisRef, still, rx, ry, fullTurn, ease, min, max, ms]);
+  }, [rootRef, irisRef, still, rx, ry, fullTurn, ease, min, max, ms, selector]);
 }

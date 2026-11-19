@@ -9,7 +9,7 @@ import { Photo } from "../media/Picture";
 /** Iris diameter, % of the eye box width (a little over the opening's height, as in life). */
 const IRIS_W = 27;
 /** How far the iris may travel from the centre (% of the eye box width), and when it blinks. */
-const GAZE = { reach: { x: 6.5, y: 3.2 }, fullTurn: 420, blink: { min: 4000, max: 8000, ms: 240 } };
+const GAZE = { reach: { x: 6.5, y: 3.2 }, fullTurn: 420, blink: { min: 4000, max: 8000, ms: 300 } };
 
 /**
  * One eye in one cloud. Its iris follows the pointer within the white (on touch

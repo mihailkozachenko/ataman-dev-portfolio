@@ -9,27 +9,78 @@ import { Photo } from "../media/Picture";
 /** The small eyes on the ring: how many, and where the first one sits (deg, 0 = right, clockwise). */
 const MINIS = 8;
 const MINI_FROM = 22.5;
-const MINI_BLINK = { min: 3500, max: 11000, ms: 200 };
-/** The central iris: diameter (% of the eye box width) and its gaze. */
+const MINI_BLINK = { min: 3500, max: 11000, ms: 320 };
+/** Iris diameter, % of an eye box's width (the same for the big eye and the small ones). */
 const IRIS_W = 33;
-const GAZE = { reach: { x: 8.5, y: 2.6 }, fullTurn: 480, blink: { min: 4000, max: 8000, ms: 240 } };
+/** All nine irises look the same way, each within its own eye; the big eye blinks every 4–8 s. */
+const GAZE = { reach: { x: 8.5, y: 2.6 }, fullTurn: 480, blink: { min: 4000, max: 8000, ms: 400 }, irises: ".angel-iris" };
+
+/**
+ * One eye of the angel: the white with its lids, and the iris moving in the
+ * opening between them (the opening's mask clips it). It blinks in place: the
+ * same eye with its lids shut lies on top, and is uncovered from the top down
+ * along the curve of the upper lid, then back up.
+ */
+function AngelEye({ className, sizes }: { className: string; sizes: string }) {
+  const b = angel.box;
+  return (
+    <div
+      data-eye=""
+      className={`cloud-eye ${className}`}
+      style={
+        {
+          "--opening": `url(${angel.opening})`,
+          "--ix": `${b.left + b.width / 2}%`,
+          "--iy": `${b.top + b.height / 2}%`,
+          "--iw": `${IRIS_W}%`,
+          "--lid-top": `${b.top}%`,
+          "--lid-bottom": `${b.top + b.height}%`,
+        } as CSSProperties
+      }
+    >
+      <Photo photo={angel.white} sizes={sizes} />
+      <div className="cloud-eye-open">
+        {/* eslint-disable-next-line @next/next/no-img-element -- tiny pre-sized WebP */}
+        <img
+          src={angel.iris.src}
+          width={angel.iris.width}
+          height={angel.iris.height}
+          alt=""
+          className="cloud-eye-iris angel-iris"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+      {/* A plain <img>: the deferred Photo's own fade-in animation would take the blink's place. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- small pre-sized WebP */}
+      <img
+        src={angel.closed.src}
+        width={angel.closed.width}
+        height={angel.closed.height}
+        alt=""
+        className="angel-eye-shut"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  );
+}
 
 /**
  * The winged eye floating in the sky (collage style): two white feathered wings
  * on either side of a white ring studded with silver beads, small eyes round
  * the ring, and a big eye in the middle. The wings slowly beat and the whole
- * thing gently sways; the central iris follows the pointer (on touch screens,
- * the scroll) and blinks every 4–8 s; the small eyes blink now and then, each on
- * its own. Decorative (aria-hidden). Motion reduced or paused: it stands still
- * and looks straight ahead.
+ * thing gently sways; all the eyes follow the pointer together (on touch
+ * screens, the scroll); the big one blinks every 4–8 s, the small ones now and
+ * then, each on its own. Decorative (aria-hidden). Motion reduced or paused:
+ * it stands still and looks straight ahead.
  */
 export function Angel({ className = "" }: { className?: string }) {
   const still = useStillMotion();
   const root = useRef<HTMLDivElement>(null);
-  const eye = useRef<HTMLDivElement>(null);
-  const iris = useRef<HTMLImageElement>(null);
+  const none = useRef<HTMLElement>(null);
 
-  useGaze(eye, iris, still, GAZE);
+  useGaze(root, none, still, GAZE);
 
   // The small eyes blink at random, out of step, only while the angel is on screen.
   useEffect(() => {
@@ -64,7 +115,6 @@ export function Angel({ className = "" }: { className?: string }) {
     };
   }, [still]);
 
-  const b = angel.box;
   return (
     <div ref={root} aria-hidden="true" className={`angel ${className}`}>
       <div className="angel-sway">
@@ -79,40 +129,10 @@ export function Angel({ className = "" }: { className?: string }) {
           <Photo photo={angel.ring} sizes="(max-width: 1024px) 80px, 160px" className="angel-ring" />
           {Array.from({ length: MINIS }, (_, i) => (
             <span key={i} className="angel-mini" style={{ "--a": `${MINI_FROM + (360 / MINIS) * i}deg` } as CSSProperties}>
-              <Photo photo={angel.small} sizes="40px" />
+              <AngelEye className="angel-mini-eye" sizes="48px" />
             </span>
           ))}
-          <div
-            ref={eye}
-            className="cloud-eye angel-eye"
-            style={
-              {
-                "--opening": `url(${angel.opening})`,
-                "--ix": `${b.left + b.width / 2}%`,
-                "--iy": `${b.top + b.height / 2}%`,
-                "--iw": `${IRIS_W}%`,
-                "--lid-top": `${b.top}%`,
-                "--lid-bottom": `${b.top + b.height}%`,
-                "--lid-shift": `${(-100 * (b.height + 6)) / (b.top + b.height + 3)}%`,
-              } as CSSProperties
-            }
-          >
-            <Photo photo={angel.white} sizes="(max-width: 1024px) 60px, 120px" />
-            <div className="cloud-eye-open">
-              {/* eslint-disable-next-line @next/next/no-img-element -- tiny pre-sized WebP */}
-              <img
-                ref={iris}
-                src={angel.iris.src}
-                width={angel.iris.width}
-                height={angel.iris.height}
-                alt=""
-                className="cloud-eye-iris"
-                loading="lazy"
-                decoding="async"
-              />
-              <span className="cloud-eye-lid" />
-            </div>
-          </div>
+          <AngelEye className="angel-eye" sizes="(max-width: 1024px) 60px, 120px" />
         </div>
         <Photo photo={clouds[1]} sizes="(max-width: 1024px) 140px, 320px" className="angel-cloud" />
       </div>

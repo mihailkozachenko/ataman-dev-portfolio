@@ -105,16 +105,17 @@ export const wmpShots: WmpShot[] = [
 
 /**
  * The winged eye in the sky (generate-angel.mjs → process-media angel): one
- * wing (the right one is its mirror), the studded ring, one small eye for the
- * ring, and the central eye — the white with its lids, the opening between
- * them as a mask, and the iris on its own.
+ * wing (the right one is its mirror), the studded ring, and the eye — the
+ * white with its lids, the opening between them as a mask, and the iris on its
+ * own (the small eyes on the ring are the same eye, smaller).
  */
 export const angel = {
   wing: { src: "/media/angel-wing.webp", width: 560, height: 534 } as Photo,
   ring: { src: "/media/angel-ring.webp", width: 513, height: 520 } as Photo,
-  small: { src: "/media/angel-eye-small.webp", width: 96, height: 51 } as Photo,
   white: { src: "/media/angel-eye-white.webp", width: 300, height: 150 } as Photo,
   opening: "/media/angel-eye-opening.webp",
+  /** The same eye with its lids closed (an edit of that photo, the same outline): the blink. */
+  closed: { src: "/media/angel-eye-closed.webp", width: 300, height: 150 } as Photo,
   iris: { src: "/media/angel-iris.webp", width: 155, height: 160 } as Photo,
   /** The opening, % of the eye box (measured by process-media angel). */
   box: { left: 19.8, top: 13.6, width: 58.2, height: 62.8 },

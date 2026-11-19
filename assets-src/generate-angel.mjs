@@ -2,9 +2,10 @@
 // transparent background, straight-on, so they stack in the browser:
 //   wing   → one white feathered wing, its root on the right (the right wing is its mirror)
 //   ring   → the white ring studded with small silver beads (empty middle)
-//   small  → one small eye, whole (lids + iris), for the eyes round the ring
-//   white  → the central eye: the white with its lids, no iris
+//   white  → the eye (big one in the middle, small ones round the ring): the white with its lids, no iris
 //   iris   → the central iris with its pupil, alone
+//   closed → the same eye (white-2) with its lids closed: an edit of that very photo, so
+//            it lines up with it pixel for pixel (the blink reveals it over the open eye)
 //   node assets-src/generate-angel.mjs <part>   → assets-src/angel/<part>-<n>.png
 // Reads OPENAI_API_KEY from .env.local; prints token usage and cost. Not part of the app.
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -35,11 +36,6 @@ const PROMPTS = {
     "the camera: a smooth glossy white porcelain band studded all the way round with fourteen small evenly spaced " +
     "polished silver metal ball rivets. The middle of the ring is completely EMPTY (transparent), the ring fills the " +
     "image with a small margin, its band thin (about one tenth of the radius). Crisp product photo, soft daylight. " + CUT,
-  small:
-    "Photorealistic macro photo of one small human eye seen straight-on, calmly open, looking straight at the viewer: " +
-    "an almond-shaped eye with a light grey-blue iris, round black pupil, a tiny catchlight, natural upper and lower " +
-    "eyelids with fine dark lashes, and a thin margin of fair skin around it. The skin is cut out in a clean smooth " +
-    "almond / lens shape with a crisp edge, like an eye cut out of a magazine for a collage. Horizontal, centred. " + CUT,
   white:
     "Photorealistic macro photograph of a single human eye region seen exactly straight-on, the eye calmly open, " +
     "neutral expression. The almond-shaped eye opening shows ONLY the white of the eye: completely empty, NO iris, " +
@@ -54,7 +50,20 @@ const PROMPTS = {
     "middle, one small soft catchlight in the upper left. Only the iris disc itself: no white of the eye, no eyelids, " +
     "no lashes, no skin, the edge of the disc soft but clean. " + CUT,
 };
-const SIZE = { wing: "1024x1024", ring: "1024x1024", small: "1536x1024", white: "1536x1024", iris: "1024x1024" };
+// Edits: made from one of the parts above, kept in its framing.
+const EDITS = {
+  closed: {
+    from: "white-2.png",
+    prompt:
+      "Edit this exact photo: the same eye, now gently CLOSED, as in the middle of a blink. The upper eyelid has " +
+      "come all the way down over the eyeball and rests on the lower lid; the closed lid line is a soft downward " +
+      "curve slightly below the middle of where the eye opening was, with the upper lashes now pointing down along " +
+      "it. No white of the eye, no iris visible. Keep EVERYTHING else identical: the same framing, size and position, " +
+      "the same almond-shaped cut-out outline and its crisp edge, the same skin tone, texture and lighting, the same " +
+      "transparent background.",
+  },
+};
+const SIZE = { wing: "1024x1024", ring: "1024x1024", white: "1536x1024", iris: "1024x1024" };
 
 const cost = (u = {}) => {
   const textIn = u.input_tokens_details?.text_tokens ?? u.input_tokens ?? 0;
@@ -63,20 +72,35 @@ const cost = (u = {}) => {
 };
 
 const [kind, n = "2"] = process.argv.slice(2);
-if (!PROMPTS[kind]) throw new Error(`usage: generate-angel.mjs ${Object.keys(PROMPTS).join(" | ")} [n]`);
-const res = await fetch("https://api.openai.com/v1/images/generations", {
-  method: "POST",
-  headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-  body: JSON.stringify({
-    model: MODEL,
-    prompt: PROMPTS[kind],
-    n: +n,
-    size: SIZE[kind],
-    quality: "high",
-    background: "transparent",
-    output_format: "png",
-  }),
-});
+if (!PROMPTS[kind] && !EDITS[kind])
+  throw new Error(`usage: generate-angel.mjs ${[...Object.keys(PROMPTS), ...Object.keys(EDITS)].join(" | ")} [n]`);
+let res;
+if (EDITS[kind]) {
+  const form = new FormData();
+  form.append("model", MODEL);
+  form.append("prompt", EDITS[kind].prompt);
+  form.append("image", new Blob([readFileSync(join(OUT, EDITS[kind].from))], { type: "image/png" }), EDITS[kind].from);
+  form.append("n", String(+n));
+  form.append("size", "1536x1024");
+  form.append("quality", "high");
+  form.append("background", "transparent");
+  form.append("output_format", "png");
+  res = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form });
+} else {
+  res = await fetch("https://api.openai.com/v1/images/generations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: MODEL,
+      prompt: PROMPTS[kind],
+      n: +n,
+      size: SIZE[kind],
+      quality: "high",
+      background: "transparent",
+      output_format: "png",
+    }),
+  });
+}
 const json = await res.json();
 if (!res.ok) throw new Error(json.error?.message ?? String(res.status));
 const taken = readdirSync(OUT).filter((f) => f.startsWith(`${kind}-`)).length;
