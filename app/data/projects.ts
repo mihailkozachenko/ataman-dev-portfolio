@@ -4,8 +4,6 @@ export type Project = {
   /** One line. Long text still fits, but the cloud grows taller. */
   description: string;
   url: string;
-  /** Optional square logo shown beside the name (decorative: the name says it). */
-  logo?: string;
 };
 
 // Order = position along the smoke plume, from the nozzle upwards.
@@ -14,7 +12,6 @@ export const projects: Project[] = [
     name: "UKOL",
     description: "AI quotes for Czech tradesmen — photo + voice → ready nabídka.",
     url: "https://ukol.app",
-    logo: "/media/ukol-logo.webp",
   },
   {
     name: "DokliCZ",

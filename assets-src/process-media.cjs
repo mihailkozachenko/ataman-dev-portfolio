@@ -393,6 +393,71 @@ async function smokeFromCloud(srcWebp, out, box) {
           `width ${pct(mx1, mx0, box.width)}, height ${pct(my1, my0, box.height)}  (box ${box.width}x${box.height})`,
       );
     },
+    // The winged eye in the sky (generate-angel.mjs): one wing (the right one is
+    // its mirror), the studded ring, one small eye for the ring, and the central
+    // eye — the white with its lids plus the opening between them as a mask
+    // (it clips the moving iris and the blink) — and its iris.
+    angel: async () => {
+      const PICK = { wing: "wing-1", ring: "ring-2", small: "small-1", white: "white-2", iris: "iris-1" };
+      await saveWebp(await raw(p(`angel/${PICK.wing}.png`)), "angel-wing.webp", { maxSide: 560, quality: 84 });
+      await saveWebp(await raw(p(`angel/${PICK.ring}.png`)), "angel-ring.webp", { maxSide: 520, quality: 86 });
+      await saveWebp(await raw(p(`angel/${PICK.small}.png`)), "angel-eye-small.webp", { maxSide: 96, quality: 86 });
+      await saveWebp(await raw(p(`angel/${PICK.iris}.png`)), "angel-iris.webp", { maxSide: 160, quality: 86 });
+
+      const W = 300;
+      const src = await raw(p(`angel/${PICK.white}.png`));
+      let x0 = src.w, y0 = src.h, x1 = 0, y1 = 0;
+      for (let y = 0; y < src.h; y++)
+        for (let x = 0; x < src.w; x++)
+          if (src.data[(y * src.w + x) * 4 + 3] > 24) {
+            if (x < x0) x0 = x;
+            if (x > x1) x1 = x;
+            if (y < y0) y0 = y;
+            if (y > y1) y1 = y;
+          }
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rx = (x1 - x0) / 2, ry = (y1 - y0) / 2;
+      // The opening: the light, unsaturated white of the eye, well inside the cut-out.
+      const open = new Float32Array(src.w * src.h);
+      for (let y = 0; y < src.h; y++)
+        for (let x = 0; x < src.w; x++) {
+          const i = (y * src.w + x) * 4;
+          const dx = (x - cx) / rx, dy = (y - cy) / ry;
+          const r = src.data[i], g = src.data[i + 1], b = src.data[i + 2];
+          const sat = Math.max(r, g, b) - Math.min(r, g, b);
+          if (dx * dx + dy * dy < 0.6 && src.data[i + 3] > 200 && r > 175 && sat < 40) open[y * src.w + x] = 1;
+        }
+      const soft = blur(blur(open, src.w, src.h, 6), src.w, src.h, 3);
+      const mask = Buffer.alloc(src.w * src.h * 4, 255);
+      let mx0 = src.w, my0 = src.h, mx1 = 0, my1 = 0;
+      for (let k = 0; k < soft.length; k++) {
+        const a = smooth(0.3, 0.6, soft[k]);
+        mask[k * 4 + 3] = Math.round(a * 255);
+        if (a > 0.5) {
+          const x = k % src.w, y = (k / src.w) | 0;
+          if (x < mx0) mx0 = x;
+          if (x > mx1) mx1 = x;
+          if (y < my0) my0 = y;
+          if (y > my1) my1 = y;
+        }
+      }
+      const box = { left: x0, top: y0, width: x1 - x0 + 1, height: y1 - y0 + 1 };
+      const out = async (buf, name, quality) => {
+        await sharp(buf, { raw: { width: src.w, height: src.h, channels: 4 } })
+          .extract(box)
+          .resize(W)
+          .webp({ quality, alphaQuality: 90, effort: 6 })
+          .toFile(q(name));
+        const m = await sharp(q(name)).metadata();
+        report.push(`${name.padEnd(22)} ${m.width}x${m.height}  ${(fs.statSync(q(name)).size / 1024).toFixed(0)} KB`);
+      };
+      await out(src.data, "angel-eye-white.webp", 86);
+      await out(mask, "angel-eye-opening.webp", 70);
+      const pct = (v, o, d) => +((100 * (v - o)) / d).toFixed(1);
+      report.push(
+        `angel eye opening (eye box %): left ${pct(mx0, x0, box.width)}, top ${pct(my0, y0, box.height)}, ` +
+          `width ${pct(mx1, mx0, box.width)}, height ${pct(my1, my0, box.height)}  (box ${box.width}x${box.height})`,
+      );
+    },
     // The "video" in projects.wmv, 720 × 450 (16:10) frames:
     //  - a title card: the UKOL logo (assets-src/projects/UKOL ikon.PNG) on dark;
     //  - UKOL's own app screens (phone screenshots in assets-src/projects/), a
@@ -434,8 +499,6 @@ async function smokeFromCloud(srcWebp, out, box) {
         await sharp(p(`wmp/${name}.png`)).extract(box).resize(720).webp({ quality: 78, effort: 6 }).toFile(q(`wmp/${name}.webp`));
         await done(name);
       }
-      await sharp(LOGO).resize(128).webp({ quality: 86, alphaQuality: 90, effort: 6 }).toFile(q("ukol-logo.webp"));
-      report.push(`ukol-logo.webp         128x128  ${(fs.statSync(q("ukol-logo.webp")).size / 1024).toFixed(0)} KB`);
     },
     smoke: async () => {
       const gen = [1, 2, 3, 4, 5, 6].map((n) => p(`smoke/smoke-${n}.png`)).filter((f) => fs.existsSync(f));

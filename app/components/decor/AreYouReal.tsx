@@ -20,7 +20,7 @@ const easeOut = (t: number) => 1 - (1 - t) ** 3;
 
 /**
  * "are you real?" four times, stepped to the right, between the hero and
- * Projects. Scroll-scrubbed: each line flies in from right in front of the
+ * Projects, with a soft rainbow passing behind the letters. Scroll-scrubbed: each line flies in from right in front of the
  * viewer — big, blurred, transparent, from the middle of the screen — and
  * settles to its size as you scroll; scrolling back sends it back out. The
  * third line, once landed, tears into bands for ~150 ms every few seconds.
@@ -125,12 +125,10 @@ export function AreYouReal() {
 
   return (
     <div aria-hidden="true" className="relative">
-      {/* The rainbow climbs right beside the lines, behind them. */}
-      <div className="ayr-sky">
-        <span className="ayr-rainbow" />
-      </div>
       <Container className="relative">
-        <div ref={root} className="ayr py-6 sm:pl-[8%] lg:py-10 lg:pl-[16%]">
+        <div ref={root} className="ayr py-8 lg:py-12">
+          {/* The rainbow passes right through the lines, behind the letters. */}
+          <span className="ayr-rainbow" />
           {Array.from({ length: LINES }, (_, i) => (
             <p key={i} className="ayr-line" style={{ "--i": i } as CSSProperties}>
               {i === GLITCH_LINE ? (

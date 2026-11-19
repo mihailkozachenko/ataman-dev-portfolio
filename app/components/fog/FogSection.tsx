@@ -4,6 +4,7 @@ import { Container } from "../Container";
 import { MissingImage } from "../decor/Collage";
 import { DissolveTitle } from "../letters/DissolveTitle";
 import { Photo } from "../media/Picture";
+import { Angel } from "../sky/Angel";
 import { MediaPlayer } from "./MediaPlayer";
 import { ProjectClouds } from "./ProjectClouds";
 import { SmokeMass } from "./SmokeMass";
@@ -34,6 +35,10 @@ export function FogSection() {
           <MissingImage className="absolute right-0 top-[1%] hidden aspect-[16/9] w-[14%] lg:block" />
           <MissingImage glyph={false} className="absolute bottom-[7%] right-0 hidden aspect-[4/3] w-[9%] lg:block" />
 
+          {/* The winged eye: in the open sky right of the title, its lowest
+              feathers tucked behind the AI Chat Widget cloud (desktop). */}
+          <Angel className="z-[15] hidden lg:block lg:left-[56cqw] lg:top-[9.5cqw] lg:w-[40cqw]" />
+
           <ProjectClouds projects={projects} />
 
           {/* Machine in the foreground, in front of the smoke. */}
@@ -45,6 +50,8 @@ export function FogSection() {
             style={{ width: "var(--mw)", aspectRatio: `${fogMachine.width} / ${fogMachine.height}` }}
           >
             {/* It floats in the sky: a slow bob, with the motor's hum and kick on top. */}
+            {/* Phones: the winged eye floats in the smoke beside the machine. */}
+            <Angel className="left-[calc(100%-4vw)] top-[-34%] w-[min(50vw,230px)] lg:hidden" />
             <div className="float-bob relative z-[2] h-full w-full">
               <div className="engine-kick h-full w-full">
                 <div className="engine-hum h-full w-full">

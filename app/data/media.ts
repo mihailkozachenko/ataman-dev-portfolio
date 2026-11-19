@@ -86,15 +86,36 @@ export const eye = {
 };
 
 /**
- * projects.wmv: the reel, 16:10 frames (process-media wmp). It opens on the UKOL
- * logo as a title card, then UKOL's own app screens, then the public pages.
+ * projects.wmv: the still on the player's screen, and the little windows it
+ * throws out — one screenshot each (16:10 frames, process-media wmp), titled
+ * with a file name. Listed in throw order: the last one lands on top of the
+ * pile. `phone`: one of the few thrown on phones.
  */
-export const wmpSlides: { src: string; project: number; label: string }[] = [
-  { src: "/media/wmp/ukol-title.webp", project: 0, label: "UKOL — logo" },
-  { src: "/media/wmp/ukol-app-dictate.webp", project: 0, label: "UKOL app — dictate the job" },
-  { src: "/media/wmp/ukol-app-quote.webp", project: 0, label: "UKOL app — the quote, ready to send" },
-  { src: "/media/wmp/ukol-app-prices.webp", project: 0, label: "UKOL app — the price list" },
-  { src: "/media/wmp/ukol-home.webp", project: 0, label: "UKOL — home page" },
-  { src: "/media/wmp/dokli-home.webp", project: 1, label: "DokliCZ — letter upload" },
-  { src: "/media/wmp/chat-widget.webp", project: 2, label: "AI Chat Widget — demo chat" },
+export const wmpStill = { src: "/media/wmp/ukol-home.webp", project: 0, alt: "UKOL — home page" };
+export type WmpShot = { src: string; file: string; project: number; alt: string; phone?: boolean };
+export const wmpShots: WmpShot[] = [
+  { src: "/media/wmp/chat-widget.webp", file: "chat_widget.png", project: 2, alt: "AI Chat Widget — a demo chat", phone: true },
+  { src: "/media/wmp/dokli-home.webp", file: "doklicz.png", project: 1, alt: "DokliCZ — upload an official letter", phone: true },
+  { src: "/media/wmp/ukol-home.webp", file: "ukol_site.png", project: 0, alt: "UKOL — home page" },
+  { src: "/media/wmp/ukol-app-prices.webp", file: "ukol_prices.png", project: 0, alt: "UKOL app — the price list" },
+  { src: "/media/wmp/ukol-app-dictate.webp", file: "ukol_dictate.png", project: 0, alt: "UKOL app — dictate the job" },
+  { src: "/media/wmp/ukol-title.webp", file: "ukol_logo.png", project: 0, alt: "UKOL logo", phone: true },
+  { src: "/media/wmp/ukol-app-quote.webp", file: "ukol_quote.png", project: 0, alt: "UKOL app — the quote, ready to send", phone: true },
 ];
+
+/**
+ * The winged eye in the sky (generate-angel.mjs → process-media angel): one
+ * wing (the right one is its mirror), the studded ring, one small eye for the
+ * ring, and the central eye — the white with its lids, the opening between
+ * them as a mask, and the iris on its own.
+ */
+export const angel = {
+  wing: { src: "/media/angel-wing.webp", width: 560, height: 534 } as Photo,
+  ring: { src: "/media/angel-ring.webp", width: 513, height: 520 } as Photo,
+  small: { src: "/media/angel-eye-small.webp", width: 96, height: 51 } as Photo,
+  white: { src: "/media/angel-eye-white.webp", width: 300, height: 150 } as Photo,
+  opening: "/media/angel-eye-opening.webp",
+  iris: { src: "/media/angel-iris.webp", width: 155, height: 160 } as Photo,
+  /** The opening, % of the eye box (measured by process-media angel). */
+  box: { left: 19.8, top: 13.6, width: 58.2, height: 62.8 },
+};

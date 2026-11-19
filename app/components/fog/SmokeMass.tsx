@@ -13,9 +13,20 @@ import { useAnimationGate } from "../../lib/motion";
  * never pulses or gaps. Spawn points follow the real layout (measured from the
  * cloud links and the machine), so it fits desktop and phone alike.
  * Motion off → one pre-simulated still frame. Off-screen / tab hidden → paused.
+ *
+ * Kept cheap on the GPU on purpose (it used to take the tab down):
+ *  - the canvas is set up once; going on / off screen only starts / stops the
+ *    loop, it never re-creates the canvas or reloads the sprites;
+ *  - its backing store is RES × the CSS size, whatever the screen's DPR: the
+ *    smoke is soft, so the browser's upscale costs nothing visible;
+ *  - only particles that touch the visible part of the canvas are drawn;
+ *  - the slow drift is drawn at 30 fps;
+ *  - no ctx.filter / shadow — the softness is baked into the sprites.
  */
 
+type Kind = "mass" | "bridge" | "stream";
 type P = {
+  kind: Kind;
   x: number;
   y: number;
   vx: number;
@@ -55,11 +66,20 @@ const POOL = { mass: [0, 1, 2, 5], stream: [3, 4, 0, 5] };
 // Extra room around the section so no particle is ever cut by the canvas edge.
 const BLEED_TOP = 160;
 const BLEED_BOTTOM = 220;
+/** Backing-store pixels per CSS pixel (instead of devicePixelRatio). */
+const RES = 0.5;
+/** Frame interval of the loop, ms (30 fps). */
+const FRAME_MS = 1000 / 30;
+// Fewer, slightly bigger and denser puffs than before: the same body, far less overdraw.
+const COUNTS = { desktop: { mass: 44, bridge: 10, stream: 18 }, mobile: { mass: 34, bridge: 8, stream: 12 } };
+const DENSITY = 1.18;
 
 export function SmokeMass() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { active, still, ready } = useAnimationGate(canvasRef);
-  const sim = useRef<{ particles: P[]; rnd: () => number; warmed: boolean } | null>(null);
+  // The running system exposes play / pause, so `active` never rebuilds it.
+  const control = useRef<{ play: () => void; pause: () => void } | null>(null);
+  const activeRef = useRef(active);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -75,24 +95,24 @@ export function SmokeMass() {
 
     let W = 0;
     let H = 0;
-    let dpr = 1;
     let clouds: Anchor[] = [];
     let nozzle = { x: 0, y: 0 };
     let target = { x: 0, y: 0 };
     let mobile = false;
-
-    if (!sim.current) sim.current = { particles: [], rnd: mulberry32(7), warmed: false };
-    const S = sim.current;
-    const rnd = S.rnd;
+    let particles: P[] = [];
+    const rnd = mulberry32(7);
 
     const measure = () => {
       const box = section.getBoundingClientRect();
       W = box.width;
       H = box.height + BLEED_TOP + BLEED_BOTTOM;
       mobile = W < 1024;
-      dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.25);
-      canvas.width = Math.round(W * dpr);
-      canvas.height = Math.round(H * dpr);
+      // Only touch the backing store when the size really changes (a resize
+      // reallocates the GPU texture).
+      const bw = Math.max(1, Math.round(W * RES));
+      const bh = Math.max(1, Math.round(H * RES));
+      if (canvas.width !== bw) canvas.width = bw;
+      if (canvas.height !== bh) canvas.height = bh;
       const local = (r: DOMRect) => ({ x: r.left - box.left, y: r.top - box.top + BLEED_TOP, w: r.width, h: r.height });
       clouds = Array.from(section.querySelectorAll<HTMLElement>(".cloud-link")).map((el, i) => {
         const r = local(el.getBoundingClientRect());
@@ -114,14 +134,14 @@ export function SmokeMass() {
       return clouds[clouds.length - 1];
     };
 
-    const spawn = (p: P, kind: "mass" | "bridge" | "stream", age = 0) => {
+    const spawn = (p: P) => {
       const ref = clouds[0]?.w ?? 300;
       p.rot = rnd() * Math.PI * 2;
       p.vr = (rnd() - 0.5) * 0.12;
-      p.age = age;
-      const pool = kind === "stream" ? POOL.stream : POOL.mass;
+      p.age = 0;
+      const pool = p.kind === "stream" ? POOL.stream : POOL.mass;
       p.sprite = pool[Math.floor(rnd() * pool.length)] % sprites.length;
-      if (kind === "stream" || clouds.length === 0) {
+      if (p.kind === "stream" || clouds.length === 0) {
         // From the nozzle toward the heart of the mass: small and dense, growing fast.
         const dx = target.x - nozzle.x;
         const dy = target.y - nozzle.y;
@@ -134,14 +154,14 @@ export function SmokeMass() {
         p.y = nozzle.y + (rnd() - 0.5) * 8;
         p.vx = (ux - uy * spread) * speed;
         p.vy = (uy + ux * spread) * speed;
-        p.size = ref * (0.12 + rnd() * 0.1);
+        p.size = ref * (0.14 + rnd() * 0.1);
         p.grow = 3.2 + rnd() * 1.8;
         p.life = 7 + rnd() * 3;
-        p.alpha = 0.75 + rnd() * 0.2;
+        p.alpha = Math.min(1, (0.75 + rnd() * 0.2) * DENSITY);
         return;
       }
       let cx: number, cy: number, w: number, h: number;
-      if (kind === "bridge" && clouds.length > 1) {
+      if (p.kind === "bridge" && clouds.length > 1) {
         // Between two clouds (or the stream end), so the mass reads as one body.
         const pts = [target, ...clouds];
         const i = Math.floor(rnd() * (pts.length - 1));
@@ -164,24 +184,22 @@ export function SmokeMass() {
       p.y = cy + Math.sin(ang) * rad * h;
       p.vx = (rnd() - 0.5) * 9;
       p.vy = -3 - rnd() * 7; // a slow rise
-      p.size = ref * (0.32 + rnd() * 0.32);
+      p.size = ref * (0.36 + rnd() * 0.34);
       p.grow = 1.35 + rnd() * 0.5;
       p.life = 9 + rnd() * 7;
-      p.alpha = 0.55 + rnd() * 0.3;
+      p.alpha = Math.min(1, (0.55 + rnd() * 0.3) * DENSITY);
     };
 
-    const counts = () => (mobile ? { mass: 34, bridge: 8, stream: 14 } : { mass: 60, bridge: 16, stream: 26 });
-
     const fill = () => {
-      const c = counts();
-      const kinds: ("mass" | "bridge" | "stream")[] = [
-        ...Array(c.mass).fill("mass"),
-        ...Array(c.bridge).fill("bridge"),
-        ...Array(c.stream).fill("stream"),
+      const c = mobile ? COUNTS.mobile : COUNTS.desktop;
+      const kinds: Kind[] = [
+        ...Array<Kind>(c.mass).fill("mass"),
+        ...Array<Kind>(c.bridge).fill("bridge"),
+        ...Array<Kind>(c.stream).fill("stream"),
       ];
-      S.particles = kinds.map((k) => {
-        const p = { kind: k } as P & { kind: typeof k };
-        spawn(p, k);
+      particles = kinds.map((kind) => {
+        const p = { kind } as P;
+        spawn(p);
         // Spread the ages so they never die together.
         p.age = rnd() * p.life;
         return p;
@@ -189,10 +207,10 @@ export function SmokeMass() {
     };
 
     const step = (dt: number) => {
-      for (const p of S.particles as (P & { kind: "mass" | "bridge" | "stream" })[]) {
+      for (const p of particles) {
         p.age += dt;
         if (p.age >= p.life) {
-          spawn(p, p.kind);
+          spawn(p);
           continue;
         }
         // Stream particles slow down as they join the mass.
@@ -205,12 +223,24 @@ export function SmokeMass() {
       }
     };
 
-    const draw = () => {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, W, H);
+    /** Draws the particles that touch the band [top, bottom] of the canvas (CSS px). */
+    const draw = (all = false) => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (loaded < sprites.length) return;
-      for (const p of S.particles) {
+      let top = 0;
+      let bottom = H;
+      if (!all) {
+        const r = canvas.getBoundingClientRect();
+        top = -r.top;
+        bottom = top + window.innerHeight;
+      }
+      for (const p of particles) {
         const t = p.age / p.life;
+        const s = p.size * (1 + (p.grow - 1) * Math.sqrt(t));
+        // Rotated square sprite: its reach is at most s·√2 / 2 from the centre.
+        const reach = s * 0.71;
+        if (p.y + reach < top || p.y - reach > bottom) continue;
         // Fade in, hold, long fade out.
         const env = smoothstep(0, 0.22, t) * (1 - smoothstep(0.55, 1, t));
         // Never let a particle reach the canvas edge visibly.
@@ -218,13 +248,14 @@ export function SmokeMass() {
           smoothstep(0, 80, p.x) * smoothstep(0, 80, W - p.x) * smoothstep(0, 90, p.y) * smoothstep(0, 90, H - p.y);
         const a = p.alpha * env * edge;
         if (a < 0.01) continue;
-        const s = p.size * (1 + (p.grow - 1) * Math.sqrt(t));
         const img = sprites[p.sprite];
         const k = s / Math.max(img.naturalWidth, img.naturalHeight);
         const w = img.naturalWidth * k;
         const h = img.naturalHeight * k;
+        const cos = Math.cos(p.rot) * RES;
+        const sin = Math.sin(p.rot) * RES;
         ctx.globalAlpha = a;
-        ctx.setTransform(dpr * Math.cos(p.rot), dpr * Math.sin(p.rot), -dpr * Math.sin(p.rot), dpr * Math.cos(p.rot), p.x * dpr, p.y * dpr);
+        ctx.setTransform(cos, sin, -sin, cos, p.x * RES, p.y * RES);
         ctx.drawImage(img, -w / 2, -h / 2, w, h);
       }
       ctx.globalAlpha = 1;
@@ -232,29 +263,38 @@ export function SmokeMass() {
 
     let raf = 0;
     let last = 0;
+    let acc = 0;
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - (last || now)) / 1000);
+      raf = requestAnimationFrame(tick);
+      const dt = Math.min(100, now - (last || now));
       last = now;
-      step(dt);
+      acc += dt;
+      if (acc < FRAME_MS - 2) return;
+      step(Math.min(0.1, acc / 1000));
+      acc = 0;
       draw();
+    };
+    const play = () => {
+      if (raf || disposed || still || loaded < sprites.length) return;
+      last = 0;
+      acc = FRAME_MS;
       raf = requestAnimationFrame(tick);
     };
+    const pause = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    control.current = { play, pause };
 
     const start = () => {
       if (disposed) return;
       measure();
-      if (!S.warmed || S.particles.length !== Object.values(counts()).reduce((a, b) => a + b, 0)) {
-        fill();
-        // Pre-simulate so the mass is already full on the first frame.
-        for (let t = 0; t < 12; t += 1 / 20) step(1 / 20);
-        S.warmed = true;
-      }
+      fill();
+      // Pre-simulate so the mass is already full on the first frame.
+      for (let t = 0; t < 12; t += 1 / 20) step(1 / 20);
       canvas.dataset.on = "true";
-      if (still || !active) {
-        draw();
-        return;
-      }
-      raf = requestAnimationFrame(tick);
+      draw(true);
+      if (activeRef.current) play();
     };
 
     smokePuffs.forEach((src) => {
@@ -268,19 +308,36 @@ export function SmokeMass() {
       sprites.push(img);
     });
 
-    const onResize = () => {
+    let lastW = 0;
+    let lastH = 0;
+    const ro = new ResizeObserver(() => {
+      const box = section.getBoundingClientRect();
+      if (Math.abs(box.width - lastW) < 1 && Math.abs(box.height - lastH) < 1) return;
+      lastW = box.width;
+      lastH = box.height;
+      if (loaded < sprites.length) return;
+      const wasMobile = mobile;
       measure();
-      if (still || !active) draw();
-    };
-    const ro = new ResizeObserver(onResize);
+      if (mobile !== wasMobile) fill();
+      if (!raf) draw(true);
+    });
     ro.observe(section);
 
     return () => {
       disposed = true;
-      cancelAnimationFrame(raf);
+      pause();
+      control.current = null;
       ro.disconnect();
+      sprites.forEach((img) => (img.onload = null));
     };
-  }, [active, still, ready]);
+  }, [still, ready]);
+
+  // On / off screen, tab hidden: only the loop starts and stops.
+  useEffect(() => {
+    activeRef.current = active;
+    if (active) control.current?.play();
+    else control.current?.pause();
+  }, [active]);
 
   return (
     <canvas
