@@ -7,8 +7,15 @@ import { useSyncExternalStore } from "react";
  *
  * On by default (the visitor's choice is remembered in localStorage). Browsers
  * block audio until a user gesture, so nothing is created or downloaded until
- * the first pointerdown / keydown anywhere on the page; then the AudioContext
- * starts, the track is fetched and fades in. "Sound off" fades everything out.
+ * the first gesture that counts as user activation anywhere on the page: a
+ * mouse press, a key, or — on touch screens — the END of a tap (pointerup /
+ * touchend / click; iOS Safari never unlocks audio on touchstart / a touch
+ * pointerdown). Then the AudioContext starts, the track is fetched and fades
+ * in. The gesture listeners stay until the context is really running, so a
+ * swipe that did not count is followed by the next tap; and if the system
+ * suspends audio later (a call, iOS "interrupted"), the next tap resumes it.
+ * On iOS the audio session is set to "playback", so the page is heard with the
+ * ringer switch on silent too. "Sound off" fades everything out.
  * prefers-reduced-motion does not affect sound.
  *
  * Music loop: decoded into a buffer, silent head/tail trimmed, each repeat
@@ -39,7 +46,7 @@ let music: { stop: (at: number) => void } | null = null;
 let musicTrack: Promise<Track | null> | null = null;
 let engineTrack: Promise<Track | null> | null = null;
 let engines: { stop: () => void } | null = null;
-let gestureArmed = false;
+let unlockArmed = false;
 
 /* ---------- preference ---------- */
 
@@ -237,13 +244,42 @@ function ensureContext() {
   engineBus = ctx.createGain();
   engineBus.gain.value = 0;
   engineBus.connect(ctx.destination);
-  // A hidden tab goes quiet; it comes back where it was.
+  // A hidden tab goes quiet; it comes back where it was. If the browser will
+  // not resume without a gesture (iOS), the next tap does it.
   document.addEventListener("visibilitychange", () => {
     if (!ctx) return;
     if (document.hidden) void ctx.suspend();
-    else if (readEnabled()) void ctx.resume();
+    else if (readEnabled()) void ctx.resume().catch(() => {}).finally(() => ctx?.state !== "running" && armUnlock());
+  });
+  // Suspended or "interrupted" by the system while the page is visible (a call,
+  // another app took the audio): wait for the next gesture.
+  ctx.addEventListener("statechange", () => {
+    if (ctx && ctx.state !== "running" && !document.hidden && readEnabled()) armUnlock();
   });
   return ctx;
+}
+
+/** iOS: let the page be heard with the ringer switch on silent (Safari 16.4+). */
+function preferPlayback() {
+  const session = (navigator as Navigator & { audioSession?: { type: string } }).audioSession;
+  if (!session) return;
+  try {
+    session.type = "playback";
+  } catch {
+    // not supported here
+  }
+}
+
+/** Old iOS: a one-sample silent buffer played inside the gesture unlocks output. */
+function unlockTick(context: AudioContext) {
+  try {
+    const src = context.createBufferSource();
+    src.buffer = context.createBuffer(1, 1, context.sampleRate);
+    src.connect(context.destination);
+    src.start(0);
+  } catch {
+    // nothing to unlock
+  }
 }
 
 function ramp(bus: GainNode, to: number, seconds: number) {
@@ -253,25 +289,40 @@ function ramp(bus: GainNode, to: number, seconds: number) {
   bus.gain.linearRampToValueAtTime(to, now + seconds);
 }
 
-/** Must be called from inside a user gesture (the first one, or the button). */
+/**
+ * Must be called from inside a user gesture (a tap, a key, the Sound button):
+ * resume() and the unlock tick only count there. The music and the motors start
+ * once the context is really running; until then the gesture listeners stay.
+ */
 function startAudio() {
+  preferPlayback();
   const context = ensureContext();
   if (!context || !musicBus || !engineBus) return;
-  void context.resume();
+  unlockTick(context);
   const mBus = musicBus;
   const eBus = engineBus;
+  // Start fetching right away; the tracks wait for a running context.
   musicTrack ??= load(TRACK, context, 0.003);
   engineTrack ??= load(ENGINE, context, 0.0001);
-  void musicTrack.then((t) => {
-    if (!t || !readEnabled()) return;
-    if (!music) music = startMusic(context, mBus, t);
-    ramp(mBus, MUSIC_VOLUME, FADE_IN);
-  });
-  void engineTrack.then((t) => {
-    if (!t || !readEnabled()) return;
-    if (!engines) engines = startEngines(context, eBus, t);
-    ramp(eBus, 1, FADE_IN);
-  });
+  const play = () => {
+    if (context.state !== "running" || !readEnabled()) {
+      if (readEnabled()) armUnlock();
+      return;
+    }
+    disarmUnlock();
+    void musicTrack?.then((t) => {
+      if (!t || !readEnabled()) return;
+      if (!music) music = startMusic(context, mBus, t);
+      ramp(mBus, MUSIC_VOLUME, FADE_IN);
+    });
+    void engineTrack?.then((t) => {
+      if (!t || !readEnabled()) return;
+      if (!engines) engines = startEngines(context, eBus, t);
+      ramp(eBus, 1, FADE_IN);
+    });
+  };
+  if (context.state === "running") play();
+  else context.resume().then(play, play);
 }
 
 function stopAudio() {
@@ -293,24 +344,42 @@ export function setSoundEnabled(next: boolean) {
   else stopAudio();
 }
 
+/*
+ * The events that carry user activation (HTML spec): keydown, mousedown, a
+ * mouse pointerdown, and — for touch and pen — pointerup / touchend (click
+ * follows them). A touch pointerdown / touchstart never does, and iOS Safari
+ * will not unlock audio on it, so it is skipped.
+ */
+const UNLOCK_EVENTS = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const;
+
+function onUnlockGesture(e: Event) {
+  if ((e.target as Element | null)?.closest?.("[data-sound-toggle]")) return;
+  // Modifier-only or Escape keys are not user activation in every browser.
+  if (e instanceof KeyboardEvent && (e.key === "Escape" || ["Shift", "Control", "Alt", "Meta"].includes(e.key))) return;
+  if (e.type === "pointerdown" && (e as PointerEvent).pointerType !== "mouse") return;
+  if (!readEnabled()) return;
+  startAudio();
+}
+
+function armUnlock() {
+  if (unlockArmed) return;
+  unlockArmed = true;
+  UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, onUnlockGesture, { capture: true, passive: true }));
+}
+
+function disarmUnlock() {
+  if (!unlockArmed) return;
+  unlockArmed = false;
+  UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, onUnlockGesture, { capture: true }));
+}
+
 /**
- * Sound is on by default but may only start on a user gesture: the first
- * pointerdown / keydown anywhere starts it (unless the visitor switched it off).
+ * Sound is on by default but may only start on a user gesture: the first one
+ * that counts, anywhere, starts it (unless the visitor switched it off).
  * Gestures on the Sound button itself are left to the button.
  */
 export function armSoundOnFirstGesture() {
-  if (gestureArmed) return;
-  gestureArmed = true;
-  const onGesture = (e: Event) => {
-    if ((e.target as Element | null)?.closest?.("[data-sound-toggle]")) return;
-    // Modifier-only or Escape keys are not user activation in every browser.
-    if (e instanceof KeyboardEvent && (e.key === "Escape" || ["Shift", "Control", "Alt", "Meta"].includes(e.key))) return;
-    window.removeEventListener("pointerdown", onGesture, true);
-    window.removeEventListener("keydown", onGesture, true);
-    if (readEnabled() && !music) startAudio();
-  };
-  window.addEventListener("pointerdown", onGesture, true);
-  window.addEventListener("keydown", onGesture, true);
+  armUnlock();
 }
 
 /* ---------- pops ---------- */
